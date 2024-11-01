@@ -37,7 +37,9 @@
 		<label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
 
 		<ul class="menu min-h-full bg-base-200 p-4 text-base-content">
-			<h1 class="mb-5 flex items-end gap-3 text-3xl font-bold"><Logo /> RecoVision</h1>
+			<h1 class="mb-5 flex items-center gap-3 text-3xl font-bold">
+				<Logo class="h-8 w-8" /> RecoVision
+			</h1>
 			<!-- Sidebar content here -->
 			<li>
 				<a href="/" class={$page.url.pathname === '/' && 'active'}>

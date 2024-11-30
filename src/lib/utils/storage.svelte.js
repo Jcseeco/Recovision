@@ -16,6 +16,20 @@
  * 
  */
 
+/**
+ * @type {{
+ * seedCustomer:string,
+ * archived: obj[],
+ * filtered: obj[],
+ * selected: obj[],
+ * criterions: {
+ *      name:string,
+ *      matchType: 'exact'|'close'|'ignore',
+ *      tolerance: number,
+ *      weight: number
+ * }[]
+ * }}
+ */
 export let systemData = $state({
     seedCustomer: '',    // the CID of the seed record
     archived: [],        // the loaded full dataset

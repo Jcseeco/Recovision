@@ -1,80 +1,130 @@
 <script>
-	import { axisBottom, scaleBand, scaleLinear, scaleOrdinal, select } from 'd3';
+	import { axisTop, rollups, scaleBand, scaleOrdinal, select } from 'd3';
+	import { systemData } from '../utils/storage.svelte';
 
-	let rankSvg, filteredSimilarity;
-	let criterias = [1, 2, 3, 4, 5, 6];
-	const filteredLen = 800; // length of filtered selection of data
+	let rankSvg, selectedData, rankedData, scaleBar, axisX, legend;
+	let viewH = 300,
+		viewW = 400;
+	const MT = 70,
+		MB = 30;
+	let scaleX = scaleBand().range([0, viewW]).padding(0.2);
+
+	const colors = [
+		{ label: 'exact', color: 'oklch(70.27% 0.1889 142.02)' },
+		{ label: 'within', color: 'oklch(56.26% 0.1653 142.02)' },
+		{ label: 'out', color: 'oklch(68.85% 0.0082 142.02)' },
+		{ label: 'ignored', color: 'lightgray' }
+	];
 	const Color = scaleOrdinal()
-		.domain(['exact', 'within', 'out', 'null'])
-		.range(['#098009', '#458045', 'gray', 'lightgray']);
+		.domain(colors.map((c) => c.label))
+		.range(colors.map((c) => c.color));
 
-	const scaleX = scaleBand().domain([1, 2, 0]).range([0, 600]).padding(0.2);
-	const scaleY = scaleBand([1, 2], [0, 600]).padding(0.2);
-	let scaleBar;
+	// const scaleY = scaleBand().range([MT, viewH]).padding(0.1);
 
-	$effect(() => {
+	$effect(async () => {
+		// TODO replace with systemData.selected
+		selectedData = await systemData.archived;
+		selectedData = selectedData.slice(0, 100);
+
 		rankSvg = select('#rank');
-		populate();
+		udpateAxis();
+		updateLegend();
+		rankData();
 		drawBars();
 	});
 
-	/**
-	 * helper, remove after data loading process has finialized
-	 */
-	function populate() {
-		filteredSimilarity = [
-			{
-				CID: '12345',
-				similarity: ['null', 'within', 'exact', 'within', 'null', 'within']
-			},
-			{
-				CID: '12346',
-				similarity: ['null', 'exact', 'out', 'exact', 'null', 'out']
-			},
-			{
-				CID: '12347',
-				similarity: ['null', 'exact', 'exact', 'out', 'null', 'out']
-			}
-		];
-		const len = filteredSimilarity.length;
+	function udpateAxis() {
+		if (axisX === undefined)
+			axisX = rankSvg.append('g').attr('class', 'axisX').attr('transform', `translate(0,${MT})`);
 
-		scaleBar = scaleBand(
-			Array.from({ length: len }, (_, i) => i),
-			[0, scaleY.bandwidth()]
-		);
+		scaleX.domain(systemData.criterions.map((c) => c.name));
+		axisX.call(axisTop(scaleX));
+		axisX.selectAll('path,line').remove();
+	}
+
+	function updateLegend() {
+		if (legend === undefined)
+			legend = rankSvg
+				.append('g')
+				.attr('class', 'legend')
+				.attr('transform', `translate(0,${MT - 40})`);
+
+		const l = legend
+			.selectAll('g')
+			.data(colors, (d) => d.label)
+			.join('g')
+			.attr('transform', (_, i) => `translate(${i * (viewW / 4) + 10},0)`);
+
+		l.append('rect')
+			.attr('width', 15)
+			.attr('height', 15)
+			.attr('x', 0)
+			.attr('y', -12)
+			.attr('fill', (d) => d.color);
+
+		l.append('text')
+			.text((d) => d.label)
+			.attr('fill', 'currentColor')
+			.attr('x', 20)
+			.attr('y', 0);
 	}
 
 	function drawBars() {
 		rankSvg
 			.selectAll('rect.bars')
-			.data(criterias)
+			.data(systemData.criterions)
 			.join('rect')
 			.attr('class', 'bars')
 			.attr('fill', 'lightgray')
-			.attr('x', (d) => scaleX(d % 3))
-			.attr('y', (d) => scaleY(Math.ceil(d / 3)))
+			.attr('x', (d) => scaleX(d.name))
+			.attr('y', MT)
 			.attr('width', scaleX.bandwidth())
-			.attr('height', scaleY.bandwidth());
+			.attr('height', viewH - MT - MB);
 
+		// group containing all bars of each customer
 		const records = rankSvg
 			.selectAll('g.records')
-			.data(filteredSimilarity, (d) => d.CID)
+			.data(rankedData, (d) => d[0])
 			.join('g')
 			.attr('class', 'records')
 			.attr('transform', (_, i) => `translate(0,${scaleBar(i)})`);
 
+		// bars for each criteria
 		records
 			.selectAll('rect')
-			.data((d) => d.similarity)
+			.data((d) => d[1])
 			.join('rect')
-			.attr('x', (_, i) => scaleX((i + 1) % 3))
-			.attr('y', (_, i) => scaleY(Math.ceil((i + 1) / 3)))
+			.attr('x', (_, i) => scaleX(systemData.criterions[i].name))
+			// .attr('y', (_, i) => scaleY(Math.ceil((i + 1) / 3)))
 			.attr('width', scaleX.bandwidth())
 			.attr('height', scaleBar.bandwidth())
 			.attr('fill', (d) => Color(d));
 	}
+
+	function rankData() {
+		rankedData = rollups(selectedData, caclSimilarity, (d) => d.CID);
+
+		// scale of the bars in each criteri
+		scaleBar = scaleBand(
+			Array.from({ length: rankedData.length }, (_, i) => i),
+			[MT, viewH - MB]
+		);
+	}
+
+	/**
+	 *
+	 * @param {obj[]} purchaseHist puuchase history of a customer
+	 */
+	function caclSimilarity(purchaseHist) {
+		const l = ['exact', 'within', 'out'];
+		// TODO replace with similarity function
+		return Array.from(
+			{ length: systemData.criterions.length },
+			() => l[Math.floor(Math.random() * 3)]
+		);
+	}
 </script>
 
-<div class="chart-container bg-white" style="width: 600px;">
-	<svg id="rank" width="100%" viewbox="0 0 600 600" />
+<div class="chart-container" style="max-width: 400px;">
+	<svg id="rank" width={viewW} height={viewH} viewbox="0 0 {viewW} {viewH}" />
 </div>

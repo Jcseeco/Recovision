@@ -23,6 +23,10 @@
         "Age_group":["under 18","18-25","25-45","45-60","60 and above"],
         "Inr":["0~30","31~100","101~300","301~500"]
     }
+
+    var colorScale = scaleOrdinal()
+		.domain(['exact', 'within', 'out'])
+        .range(['oklch(70.27% 0.1889 142.02)','oklch(56.26% 0.1653 142.02)','oklch(68.85% 0.0082 142.02)'])
         
     $effect(async()=>{
         await loadData()
@@ -50,6 +54,28 @@
 
         var attribute = ["Gender","Age_group","Inr"]
         var svg = select("#similar-rcord")
+        var legend = svg.append("g")
+            .attr("transform", `translate(${-20}, 20)`)
+        legend.selectAll("legend")
+            .data(colorScale.domain())
+            .enter()
+            .append("g")
+            .attr("transform", (d, i) => `translate(20, ${20 + i * 20})`) // 簡單的排布
+            .each(function(d) {
+                select(this)
+                    .append("rect")
+                    .attr("width", 15)
+                    .attr("height", 15)
+                    .attr("fill", colorScale(d));
+            
+                select(this)
+                    .append("text")
+                    .attr("x", 20)
+                    .attr("y", 12)
+                    .text(d)
+                    .style("font-size", "12px")
+                    .style("fill", "black");
+                })
         for(let i in attribute){
             var m = [i*450 -50,200]
             singleBar(svg,attribute[i],m,dataPreprocessing(attribute[i]))
@@ -68,9 +94,9 @@
 
     function SimilaritytoCat(smi){
         if(smi == 0)return "exact";
-        else if(smi == 1)return "half-smi";
+        else if(smi == 1)return "within";
         else{
-            return "non-smi";
+            return "out";
         }
     }
 
@@ -100,9 +126,10 @@
         .range([200,0])
         .domain([0,max(bardata,d=>d[1])])
 
-        var colorScale = scaleOrdinal()
-		.domain(['exact', 'half-smi', 'non-smi'])
-		.range(['green','darkgreen','grey'])
+		// { label: 'exact', color: 'oklch(70.27% 0.1889 142.02)' },
+        // { label: 'within', color: 'oklch(56.26% 0.1653 142.02)' },
+        // { label: 'out', color: 'oklch(68.85% 0.0082 142.02)' }
+        //.range(['green','darkgreen','grey'])
         //.range(['#02576c', '#E8DB64', 'gray'])
 
         singleBar_svg.append("g")
@@ -113,7 +140,23 @@
         .style("text-anchor", "end")
 
         singleBar_svg.append("g")
-        .call(axisLeft(yScale))
+            .call(axisLeft(yScale))
+
+        singleBar_svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("x", 400 / 2-50)
+            .attr("y", 300 - 10)
+            .text(`${id}`)
+            .style("font-size", "14px")
+            .style("fill", "black")
+        singleBar_svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", `rotate(-90)`)
+            .attr("x", -300 / 2+30)
+            .attr("y", -60)
+            .text("# of records")
+            .style("font-size", "14px")
+            .style("fill", "black")
 
         singleBar_svg.selectAll(`.${id}`)
         .data(bardata)
@@ -125,11 +168,10 @@
         .attr("width", xScale.bandwidth())
         .attr("height", d => 200 - yScale(d[1]))
         .attr("fill", function(d){
-            //console.log(d[0])
             var c
             if(id == "Gender"){
                 if(d[0] == temp_user[1])c = "exact"
-                else c = "non-smi"
+                else c = "out"
             }
             else if(id == "Age_group"){
                 c = SimilaritytoCat(Math.abs(AgeGrouptoCat[d[0]]-AgeGrouptoCat[temp_user[0]]))

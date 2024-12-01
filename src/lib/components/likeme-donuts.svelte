@@ -78,7 +78,8 @@
         
         colorScale = scaleOrdinal()
 		.domain(['exact', 'half-smi', 'non-smi'])
-		.range(['green','darkgreen','grey'])
+        .range(['oklch(70.27% 0.1889 142.02)','oklch(56.26% 0.1653 142.02)','oklch(68.85% 0.0082 142.02)'])
+        
         //.range(['#02576c', '#E8DB64', 'gray'])
     }
 

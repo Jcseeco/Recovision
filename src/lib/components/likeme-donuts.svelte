@@ -1,13 +1,14 @@
+
 <script>
 
     import {select, csv, groups, hierarchy, partition, arc ,scaleOrdinal,schemeCategory10, color} from 'd3';
     let temp_data ={}
     let temp_user = ["25-45","Female","A"]
     let radius = 100
-    let arc_ ,root,colorScale
+    let arc_ ,root,colorScale,p_root
 
     const INRtoCat = [
-            { min: -1, max: 50, category: "A" },
+            { min: 0, max: 50, category: "A" },
             { min: 50, max: 100, category: "B" },
             { min: 100, max: 150, category: "C" },
             { min: 150, max: 500, category: "D" }
@@ -26,7 +27,6 @@
         await loadData()
         buildHierarchy()
         drawDonuts()
-        //console.log('A'.charCodeAt(0) - 'B'.charCodeAt(0))
     })
 
     async function loadData() {
@@ -67,7 +67,7 @@
         var partition_ = partition()
             .size([2 * Math.PI, radius * radius])
 
-        partition_(root);
+        p_root = partition_(root);
         //console.log(root)
 
         arc_ = arc()
@@ -78,7 +78,8 @@
         
         colorScale = scaleOrdinal()
 		.domain(['exact', 'half-smi', 'non-smi'])
-		.range(['#02576c', '#E8DB64', 'gray'])
+		.range(['green','darkgreen','grey'])
+        //.range(['#02576c', '#E8DB64', 'gray'])
     }
 
     function SimilaritytoCat(smi){
@@ -95,6 +96,45 @@
         const donuts = select("#likeme-donuts")
             .append("g")
             .attr('transform', 'translate(' + 190 + ',' + 120 + ')')
+
+        const label = donuts
+            .append("text")
+            .attr("text-anchor", "middle")
+            .attr("fill", "#888")
+            .style("visibility", "hidden")
+        
+        label
+            .append("tspan")
+            .attr("class","percentage")
+            .attr("x",0)
+            .attr("y",0)
+            .attr("dy","-0.1em")
+            .attr("font-size",10)
+            .text("")
+        label
+            .append("tspan")
+            .attr("class","category_text")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("dy", "1.5em")
+            .attr("font-size",7)
+            .text("of people are in this category")
+        
+        const tooltip =  select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("background-color", "#333")
+            .style("color", "#fff")
+            .style("padding", "5px 10px")
+            .style("border-radius", "4px")
+            .style("font-size", "14px")
+            .style("pointer-events", "none")
+            .style("box-shadow", "0px 2px 5px rgba(0, 0, 0, 0.3)")
+            .style("opacity", 0)
+            .style("transition", "opacity 0.2s ease")
+            .style("text-align", "center")
+
         donuts
             .selectAll("path")
             .data(root.descendants())
@@ -115,7 +155,6 @@
                     }
                 }
                 else if(d.depth == 3){ //inr
-                    //console.log("check",d.data.name.charCodeAt(0),temp_user[2].charCodeAt(0))
                     temp = SimilaritytoCat(Math.abs(d.data.name.charCodeAt(0)-temp_user[2].charCodeAt(0)))
                 }
                 else{
@@ -128,10 +167,41 @@
             .on("mouseenter",function(event,d){
                 const ancestors = d.ancestors().reverse().slice(1) //remove root(the first element)
                 donuts.selectAll("path")
-                    .style("opacity", node => ancestors.includes(node) ? 1 : 0.7);
+                    .style("filter", node => ancestors.includes(node) ? "brightness(1.2)" : "brightness(1)")
+                var percentage_ = ((100*d.value)/p_root.value).toPrecision(3)
+                label.style("visibility","visible")
+                    .select(".percentage")
+                    .text(`${percentage_}%`)
+
+                // var ancestors_string = ancestors.map(a => a.data.name).join(" ")
+                // label.select(".category_text")
+                //     .text(` ${ancestors_string}`)
+
+                var tooltip_msg = ""
+                if(ancestors.length > 0){//age
+                    tooltip_msg = `Age : ${ancestors[0].data.name}`
+                }
+                if(ancestors.length > 1){//gender
+                    tooltip_msg += `<br>Gender : ${ancestors[1].data.name}`
+                }
+                if(ancestors.length > 2){//inr
+                    tooltip_msg += `<br>INR range :
+                    ${INRtoCat.find(d => d.category == ancestors[2].data.name).min}-
+                    ${INRtoCat.find(d => d.category == ancestors[2].data.name).max}`
+                }
+                tooltip.style("opacity", 1)
+                    .html(tooltip_msg)
+                    .style("left", `${event.pageX}px`)
+                    .style("top", `${event.pageY - 20}px`)
+            })
+            .on("mousemove", function(event) {
+                tooltip
+                    .style("left", `${event.pageX + 10}px`)
+                    .style("top", `${event.pageY - 10}px`)
             })
             .on("mouseleave",function(event,d){
-                donuts.selectAll("path").style("opacity", 1);
+                donuts.selectAll("path").style("filter", "brightness(1)")
+                tooltip.style("opacity",0)
             })
     }
 

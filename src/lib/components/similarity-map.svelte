@@ -62,7 +62,7 @@
 			.join('path')
 			.attr('class', 'states')
 			.attr('d', path)
-			.attr('fill', (d) => Color(d.properties.similarity));
+			.attr('fill', (d) => Color(d.properties.similarity))
 	}
 
 	/**

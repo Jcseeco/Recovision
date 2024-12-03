@@ -101,7 +101,9 @@
 			.attr('fill', (d) => Color(d));
 	}
 
+	let cCount = 0;
 	function rankData() {
+		cCount = 0;
 		rankedData = rollups(selectedData, caclSimilarity, (d) => d.CID);
 
 		// scale of the bars in each criteri
@@ -118,10 +120,36 @@
 	function caclSimilarity(purchaseHist) {
 		const l = ['exact', 'within', 'out'];
 		// TODO replace with similarity function
-		return Array.from(
-			{ length: systemData.criterions.length },
-			() => l[Math.floor(Math.random() * 3)]
-		);
+
+		if (++cCount < 30) {
+			return Array.from({ length: systemData.criterions.length }, (_, i) => {
+				if (i === 1) {
+					return ['exact', 'exact', 'exact', 'out'][Math.floor(Math.random() * 4)];
+				} else {
+					return ['exact', 'exact', 'exact', 'within', 'within', 'within', 'out'][
+						Math.floor(Math.random() * 7)
+					];
+				}
+			});
+		} else if (++cCount < 60) {
+			return Array.from({ length: systemData.criterions.length }, (_, i) => {
+				if (i === 1) {
+					return ['exact', 'exact', 'out', 'out'][Math.floor(Math.random() * 4)];
+				} else {
+					return ['exact', 'within', 'within', 'within', 'out', 'out'][
+						Math.floor(Math.random() * 6)
+					];
+				}
+			});
+		} else {
+			return Array.from({ length: systemData.criterions.length }, (_, i) => {
+				if (i === 1) {
+					return ['exact', 'out', 'out'][Math.floor(Math.random() * 3)];
+				} else {
+					return ['exact', 'within', 'within', 'out', 'out'][Math.floor(Math.random() * 5)];
+				}
+			});
+		}
 	}
 </script>
 

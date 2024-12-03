@@ -1,4 +1,14 @@
 <script>
+	import AgeChart from './criteria-control-age.svelte';
+	import GenderChart from './criteria-control-gender.svelte';
+	import DiscountAmountChart from './criteria-control-discount-amount.svelte';
 </script>
 
-<div class="chart-container h-60 w-96 bg-white">similarity-criteria-control</div>
+<div class="flex justify-between">
+	<AgeChart />
+	<GenderChart />
+	<DiscountAmountChart />
+</div>
+
+<style>
+</style>

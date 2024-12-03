@@ -18,20 +18,24 @@
 
 export let systemData = $state({
     seedCustomer: '',    // the CID of the seed record
+    seedCustomerObj:{},
     archived: [],        // the loaded full dataset
     filtered: [],        // a sub set of the archived dataset filtered by the configuration of the similarity criteria controls
     selected: [],        // a sub set of filtered data selected from the similarity distribution chart
+    // sliderValue:0,
+    // selectedOption:'N',
+    maxValue:0,
     criterions: [
         {
             name: 'Age Group',
-            matchType: 'exact', // can be 'exact', 'close', 'ignore'
+            matchType: 'close', // can be 'exact', 'close', 'ignore'
             // if match type is 'exact', tolerance value does not matter
             tolerance: 1,   // customers within 1 Age group of the seed customer are included in the filtered data
             weight: 1
         }, {
             name: 'Gender',
             // customers that are the same gender as seed customer are included in the filtered data
-            matchType: 'exact', // can be 'exact', 'close', 'ignore'
+            matchType: 'close', // can be 'exact', 'close', 'ignore'
             tolerance: null,
             weight: 1
         }, {

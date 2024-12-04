@@ -21,16 +21,16 @@
 
 	async function loadData() {
 		isLoading = true;
-		systemData.archived = await loadCSV('ecommerce_usa.csv', parseRow);
+		systemData.archived = await loadCSV('ecommerce_usa_v2.csv', parseRow);
 		isLoading = false;
 		filteredData = systemData.archived;
 		cols = systemData.archived.columns;
 	}
 
 	function parseRow(row) {
-		let [day, month, yearTime] = row['Purchase Date'].split('/');
-		row['Purchase Date'] = new Date(`${month}/${day}/${yearTime}`);
-		row['Discount Amount (INR)'] = +row['Discount Amount (INR)'];
+		// let [day, month, yearTime] = row['Purchase Date'].split('/');
+		row['Purchase Date'] = new Date(row['Purchase Date']);
+		row['Discount Amount'] = +row['Discount Amount'];
 		row['Gross Amount'] = +row['Gross Amount'];
 		row['Net Amount'] = +row['Net Amount'];
 
@@ -47,12 +47,23 @@
 		filteredData = systemData.archived.filter((d) => d[searchCol].match(re));
 	}
 
-	function selectSeed(CID) {
+	function selectSeed(CID, i) {
 		systemData.seedCustomer = CID;
+		const seedI = perPage * (page - 1) + i;
+		const discountAmount = systemData.archived.reduce((discountSum, d) => {
+			discountSum += d.CID === CID ? d['Discount Amount'] : 0;
+			return discountSum;
+		}, 0);
+
+		systemData.seedCustomerObj = {
+			...systemData.archived[seedI],
+			'Discount Amount': discountAmount
+		};
 	}
 
-	function deselectSeed(CID) {
+	function deselectSeed() {
 		systemData.seedCustomer = '';
+		systemData.seedCustomerObj = { 'Age Group': '', Gender: '', 'Discount Amount': 0 };
 	}
 </script>
 
@@ -181,7 +192,7 @@
 							class="hover cursor-pointer {systemData.seedCustomer === d.CID && 'is-seed'}"
 							title="select as seed"
 							onclick={() => {
-								selectSeed(d.CID);
+								selectSeed(d.CID, i);
 							}}
 						>
 							<th>{i + 1}</th>

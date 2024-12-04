@@ -1,13 +1,14 @@
 <script>
-    import {select,csv,scaleBand,scaleLinear,group,axisBottom,axisLeft,max,scaleOrdinal} from 'd3'
+    import {rollups,select,csv,scaleBand,scaleLinear,group,axisBottom,axisLeft,max,scaleOrdinal} from 'd3'
+    import { systemData } from '../utils/storage.svelte'
     let temp_data
-    let temp_user = ["25-45","Female","A"]
+    let seed_customer //= ["25-45","Female","A"]
 
     const INRtoCat = [
-            { min: -1, max: 30, category: "A" , name : "0~30"},
-            { min: 30, max: 100, category: "B" , name : "31~100"},
-            { min: 100, max: 300, category: "C" , name : "101~300"},
-            { min: 300, max: 500, category: "D" , name : "301~500"}
+            { min: -1, max: 5000, category: "A" , name : "0~5000"},
+            { min: 5000, max: 10000, category: "B" , name : "5001~10000"},
+            { min: 10000, max: 15000, category: "C" , name : "10001~15000"},
+            { min: 15000, max: 20000, category: "D" , name : "15001~20000"}
     ]
 
     const AgeGrouptoCat = {
@@ -21,7 +22,7 @@
     const xAxis = {
         "Gender":["Female","Male","Other"],
         "Age_group":["under 18","18-25","25-45","45-60","60 and above"],
-        "Inr":["0~30","31~100","101~300","301~500"]
+        "Inr":INRtoCat.map(item => item.name)
     }
 
     var colorScale = scaleOrdinal()
@@ -29,24 +30,53 @@
         .range(['oklch(70.27% 0.1889 142.02)','oklch(56.26% 0.1653 142.02)','oklch(68.85% 0.0082 142.02)'])
         
     $effect(async()=>{
-        await loadData()
-        //console.log(temp_data)
-        drawBar()
+        var len = await loadData()
+        if(len>0)drawBar()
+        else select("#similar-rcord").selectAll("*").remove()
     })
 
     async function loadData() {
-        var data = await csv("ecommerce_usa.csv")
-        temp_data = data.map(function(d){
-            return {
-                Gender : d.Gender,
-                Age_group : d["Age Group"],
-                Inr : findCategory(+d["Discount Amount (INR)"])
+        //var data = await csv("ecommerce_usa.csv")
+        var data = await systemData.filtered
+        // console.log("first data",data[0])
+        // console.log("group",group(data,d=>d.CID))
+        if(data.length>0){
+            select("#similar-rcord").selectAll("*").remove()
+            var groupedData = rollups(
+                systemData.filtered,
+                (group) => ({
+                    ...group[0],
+                    totalDiscount: group.reduce((sum, d) => sum + (+d["Discount Amount"]), 0) // 计算总折扣
+                }),
+                (d) => d.CID
+            ).map(([key, value]) => value)
+            console.log("roolup",groupedData)
+            temp_data = groupedData.map(function(d){
+                return {
+                    Gender : d.Gender,
+                    Age_group : d["Age Group"],
+                    Inr : findCategory(d["totalDiscount"])
+                }
+            })
+            //console.log("tempdata[0]",temp_data[0])
+            //console.log("seed records",systemData.seedCustomer)
+            //console.log("find seed records data",groupedData.find(d => d.CID == systemData.seedCustomer))
+            var seed_data = groupedData.find(d => d.CID == systemData.seedCustomer)
+            seed_customer = {
+                gender : seed_data.Gender,
+                age : seed_data["Age Group"],
+                inr: INRtoCat.find(c => seed_data.totalDiscount > c.min 
+                && seed_data.totalDiscount <= c.max).category
             }
-        })
+        }
+        
+        return data.length
     }
 
+
     function findCategory(value) {
-        const category = INRtoCat.find(c => value > c.min && value <= c.max);
+        const category = INRtoCat.find(c => value > c.min && value <= c.max)
+        if(!category)console.log(value,category)
         return category ? category.name : "Unknown"
     }
 
@@ -170,15 +200,15 @@
         .attr("fill", function(d){
             var c
             if(id == "Gender"){
-                if(d[0] == temp_user[1])c = "exact"
+                if(d[0] == seed_customer.gender)c = "exact"
                 else c = "out"
             }
             else if(id == "Age_group"){
-                c = SimilaritytoCat(Math.abs(AgeGrouptoCat[d[0]]-AgeGrouptoCat[temp_user[0]]))
+                c = SimilaritytoCat(Math.abs(AgeGrouptoCat[d[0]]-AgeGrouptoCat[seed_customer.age]))
             }
             else if(id == "Inr"){
                 var n = INRtoCat.find(item => item.name === d[0])
-                c = SimilaritytoCat(Math.abs(n.category.charCodeAt(0)-temp_user[2].charCodeAt(0)))
+                c = SimilaritytoCat(Math.abs(n.category.charCodeAt(0)-seed_customer.inr.charCodeAt(0)))
             }
             return colorScale(c)
         })

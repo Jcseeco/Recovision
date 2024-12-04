@@ -2,6 +2,7 @@
 <script>
 
     import {select, csv, groups, hierarchy, partition, arc ,scaleOrdinal,schemeCategory10, color} from 'd3';
+    import { systemData } from '../utils/storage.svelte'
     let temp_data ={}
     let temp_user = ["25-45","Female","A"]
     let radius = 100
@@ -24,35 +25,47 @@
 
 
     $effect(async()=>{
-        await loadData()
-        buildHierarchy()
-        drawDonuts()
+        var d = await loadData()
+        if(d.length>0){
+            select("#likeme-donuts").selectAll("*").remove()
+            dataPreprocessing(d)
+            buildHierarchy()
+            drawDonuts()
+        }
+        else{
+            select("#likeme-donuts").selectAll("*").remove()
+        }
+        
     })
 
     async function loadData() {
-        var data = await csv("ecommerce_usa.csv")
+        //var data = await csv("ecommerce_usa.csv")
+        var data = await systemData.filtered
+        return data
+    }
 
-            //var key = [`${d.Gender}`,`${d["Age Group"]}`,`${findCategory(+d["Discount Amount (INR)"])}`]
-            var group_data = groups(data, d => d["Age Group"], d => d.Gender, d => findCategory(+d["Discount Amount (INR)"]))
-            temp_data = {
-                "name": "root",
-                "children": group_data.map(function(ageGroup) {
-                    return {
-                        "name": ageGroup[0],  // age_group
-                        "children": ageGroup[1].map(function(genderGroup) {
-                            return {
-                                "name": genderGroup[0],  // gender
-                                "children": genderGroup[1].map(function(inrGroup) {
-                                    return {
-                                    "name": inrGroup[0], 
-                                    "value": inrGroup[1].length
-                                    }
-                                })
-                            }
-                        })
-                    }
-                })
-            }
+    function dataPreprocessing(data){
+        //var key = [`${d.Gender}`,`${d["Age Group"]}`,`${findCategory(+d["Discount Amount (INR)"])}`]
+        var group_data = groups(data, d => d["Age Group"], d => d.Gender, d => findCategory(+d["Discount Amount"]))
+        temp_data = {
+            "name": "root",
+            "children": group_data.map(function(ageGroup) {
+                return {
+                    "name": ageGroup[0],  // age_group
+                    "children": ageGroup[1].map(function(genderGroup) {
+                        return {
+                            "name": genderGroup[0],  // gender
+                            "children": genderGroup[1].map(function(inrGroup) {
+                                return {
+                                "name": inrGroup[0], 
+                                "value": inrGroup[1].length
+                                }
+                            })
+                        }
+                    })
+                }
+            })
+        }
     }
     function findCategory(value) {
         const category = INRtoCat.find(c => value >= c.min && value <= c.max);

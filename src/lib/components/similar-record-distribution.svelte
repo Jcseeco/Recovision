@@ -46,11 +46,11 @@
                 systemData.filtered,
                 (group) => ({
                     ...group[0],
-                    totalDiscount: group.reduce((sum, d) => sum + (+d["Discount Amount"]), 0) // 计算总折扣
+                    totalDiscount: group.reduce((sum, d) => sum + (+d["Discount Amount"]), 0) 
                 }),
                 (d) => d.CID
             ).map(([key, value]) => value)
-            console.log("roolup",groupedData)
+            
             temp_data = groupedData.map(function(d){
                 return {
                     Gender : d.Gender,

@@ -1,18 +1,18 @@
 
 <script>
 
-    import {select, csv, groups, hierarchy, partition, arc ,scaleOrdinal,schemeCategory10, color} from 'd3';
+    import {rollups,select, csv, groups, hierarchy, partition, arc ,scaleOrdinal,schemeCategory10, color} from 'd3';
     import { systemData } from '../utils/storage.svelte'
     let temp_data ={}
-    let temp_user = ["25-45","Female","A"]
+    let seed_customer
     let radius = 100
     let arc_ ,root,colorScale,p_root
 
     const INRtoCat = [
-            { min: 0, max: 50, category: "A" },
-            { min: 50, max: 100, category: "B" },
-            { min: 100, max: 150, category: "C" },
-            { min: 150, max: 500, category: "D" }
+            { min: 0, max: 5000, category: "A"},
+            { min: 5000, max: 10000, category: "B"},
+            { min: 10000, max: 15000, category: "C"},
+            { min: 15000, max: 20000, category: "D" }
     ]
 
     const AgeGrouptoCat = {
@@ -46,7 +46,25 @@
 
     function dataPreprocessing(data){
         //var key = [`${d.Gender}`,`${d["Age Group"]}`,`${findCategory(+d["Discount Amount (INR)"])}`]
-        var group_data = groups(data, d => d["Age Group"], d => d.Gender, d => findCategory(+d["Discount Amount"]))
+        var rollups_data = rollups(
+            systemData.filtered,
+            (group) => ({
+                ...group[0],
+                totalDiscount: group.reduce((sum, d) => sum + (+d["Discount Amount"]), 0) 
+            }),
+            (d) => d.CID
+        ).map(([key, value]) => value)
+
+        var seed_data = rollups_data.find(d => d.CID == systemData.seedCustomer)
+        seed_customer = {
+            gender : seed_data.Gender,
+            age : seed_data["Age Group"],
+            inr: INRtoCat.find(c => seed_data.totalDiscount > c.min 
+            && seed_data.totalDiscount <= c.max).category
+        }
+        console.log("seed",seed_customer,seed_data)
+        var group_data = groups(rollups_data, d => d["Age Group"], d => d.Gender, d => findCategory(d.totalDiscount))
+        //console.log("group data",group_data)
         temp_data = {
             "name": "root",
             "children": group_data.map(function(ageGroup) {
@@ -66,6 +84,7 @@
                 }
             })
         }
+        //console.log("temp data",temp_data)
     }
     function findCategory(value) {
         const category = INRtoCat.find(c => value >= c.min && value <= c.max);
@@ -158,10 +177,10 @@
                 //console.log(d)
                 var temp
                 if(d.depth == 1){ //age group
-                    temp = SimilaritytoCat(Math.abs(AgeGrouptoCat[d.data.name]-AgeGrouptoCat[temp_user[0]]))
+                    temp = SimilaritytoCat(Math.abs(AgeGrouptoCat[d.data.name]-AgeGrouptoCat[seed_customer.age]))
                 }
                 else if(d.depth == 2){ //gender
-                    if(d.data.name == temp_user[1]){
+                    if(d.data.name == seed_customer.gender){
                         temp = "exact"
                     }
                     else{
@@ -169,7 +188,7 @@
                     }
                 }
                 else if(d.depth == 3){ //inr
-                    temp = SimilaritytoCat(Math.abs(d.data.name.charCodeAt(0)-temp_user[2].charCodeAt(0)))
+                    temp = SimilaritytoCat(Math.abs(d.data.name.charCodeAt(0)-seed_customer.inr.charCodeAt(0)))
                 }
                 else{
                     temp = "non-smi"

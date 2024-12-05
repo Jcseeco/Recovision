@@ -21,22 +21,40 @@
  * seedCustomer:string,
  * archived: obj[],
  * filtered: obj[],
- * selected: obj[],
- * seedCustomerObj:{'Age Group':string,'Gender':string,'Discount Amount':number,[key:string]:any}
+ * seedCustomerObj:{'CID': string,'Age Group':string,'Gender':string,'Discount Amount':number,[key:string]:any}
  * criterions: {
  *      name:string,
  *      matchType: 'exact'|'close'|'ignore',
  *      tolerance: number,
  *      weight: number
- * }[]
+ * }[],
+ * aggregated: {
+ *      'CID': string,
+ *      'Age Group': string,
+ *      'Gender': string,
+ *      'Discount Amount': number,
+ * }[],
+ * distanceSorted:{
+ *      CID: string,
+ *      'Age Group': number,
+ *      'Gender': number,
+ *      'Discount Amount': number,
+ *      score: number,
+ * }[],
+ * filteredAggregated: {
+ *      'CID': string,
+ *      'Age Group': string,
+ *      'Gender': string,
+ *      'Discount Amount': number,
+ *      'score': number
+ * }[],
  * }}
  */
 export let systemData = $state({
     seedCustomer: '',    // the CID of the seed record
     archived: [],        // the loaded full dataset
     filtered: [],        // a sub set of the archived dataset filtered by the configuration of the similarity criteria controls
-    selected: [],        // a sub set of filtered data selected from the similarity distribution chart
-    seedCustomerObj: { 'Age Group': '', 'Gender': '', 'Discount Amount': 0 },
+    seedCustomerObj: { 'CID': '', 'Age Group': '', 'Gender': '', 'Discount Amount': 0 },
     criterions: [
         {
             name: 'Age Group',
@@ -52,9 +70,12 @@ export let systemData = $state({
             weight: 1
         }, {
             name: 'Discount Amount',
-            matchType: 'close', // can be 'exact', 'close', 'ignore'
+            matchType: 'exact', // can be 'exact', 'close', 'ignore'
             tolerance: 1,   // customers whose total discount amount is within 1 bin of the seed customer are included in the filtered data
             weight: 1
         }
-    ]
+    ],
+    aggregated: [],
+    distanceSorted: [],
+    filteredAggregated: []
 })

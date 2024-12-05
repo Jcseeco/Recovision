@@ -1,8 +1,10 @@
 <script>
 	import Logo from '$lib/components/logo.svelte';
-	import { csv as loadCSV } from 'd3';
+	import { csv as loadCSV, mean, rollups } from 'd3';
 	import { systemData } from '../lib/utils/storage.svelte';
 	import Throbber from '../lib/components/throbber.svelte';
+	import { onMount } from 'svelte';
+	import { calcSimilarities } from '../lib/utils/score';
 
 	let filteredData = $state([]);
 	let cols = $state([]);
@@ -14,17 +16,21 @@
 	let search = $state('');
 	let isLoading = $state(false);
 
-	$effect(() => {
-		filteredData = systemData.archived;
-		cols = systemData.archived.columns;
+	onMount(() => {
+		if (systemData.aggregated.length) {
+			filteredData = systemData.aggregated;
+			cols = Object.keys(systemData.aggregated[0]);
+		}
 	});
 
 	async function loadData() {
 		isLoading = true;
 		systemData.archived = await loadCSV('ecommerce_usa_v2.csv', parseRow);
+		systemData.aggregated = aggregate(systemData.archived);
 		isLoading = false;
-		filteredData = systemData.archived;
-		cols = systemData.archived.columns;
+		// these are used as table data
+		filteredData = systemData.aggregated;
+		cols = Object.keys(systemData.aggregated[0]);
 	}
 
 	function parseRow(row) {
@@ -37,28 +43,44 @@
 		return row;
 	}
 
+	/**
+	 * aggregates data for distinct customers
+	 */
+	function aggregate(dataset) {
+		return rollups(
+			dataset,
+			(D) => ({
+				CID: D[0].CID,
+				'Age Group': D[0]['Age Group'],
+				Gender: D[0]['Gender'],
+				'Discount Amount': mean(D, (d) => d['Discount Amount'])
+			}),
+			(d) => d.CID
+		).map(([CID, d]) => d);
+	}
+
 	function filterData() {
 		if (search === '') {
-			filteredData = systemData.archived;
+			filteredData = systemData.aggregated;
 			return;
 		}
 
 		const re = new RegExp(`.*${search}.*`, 'i');
-		filteredData = systemData.archived.filter((d) => d[searchCol].match(re));
+		filteredData = systemData.aggregated.filter((d) => d[searchCol].match(re));
 	}
 
 	function selectSeed(CID, i) {
 		systemData.seedCustomer = CID;
 		const seedI = perPage * (page - 1) + i;
-		const discountAmount = systemData.archived.reduce((discountSum, d) => {
-			discountSum += d.CID === CID ? d['Discount Amount'] : 0;
-			return discountSum;
-		}, 0);
 
-		systemData.seedCustomerObj = {
-			...systemData.archived[seedI],
-			'Discount Amount': discountAmount
-		};
+		systemData.seedCustomerObj = systemData.aggregated[seedI];
+		systemData.distanceSorted = calcSimilarities(
+			systemData.seedCustomerObj,
+			systemData.aggregated,
+			systemData.criterions
+		);
+
+		console.log(systemData.distanceSorted[0]);
 	}
 
 	function deselectSeed() {
@@ -197,7 +219,7 @@
 						>
 							<th>{i + 1}</th>
 							{#each Object.keys(d) as col}
-								<td>{d[col]}</td>
+								<td>{typeof d[col] === 'number' ? d[col].toFixed(2) : d[col]}</td>
 							{/each}
 						</tr>
 					{/each}

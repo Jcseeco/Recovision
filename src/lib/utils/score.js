@@ -1,4 +1,6 @@
 import { systemData } from '../utils/storage.svelte';
+import { min as d3min, max as d3max, sort as d3sort } from 'd3';
+
 export function calculateSimilarity(seed, compare, cb) {
     let totalScore = 0;
     systemData.criterions.forEach(({ name, weight, matchType }) => {
@@ -83,4 +85,132 @@ function getDiscountRange(amount) {
     if (amount <= 300) return [201, 300];
     if (amount <= 400) return [301, 400];
     return [401, 500];
+}
+
+/**
+ * returns the original dataset with added attribute of similarity score
+ * @param {{'CID': string,'Age Group':string,'Gender':string,'Discount Amount':number,[key:string]:any}} seed 
+ * @param {{'CID': string,'Age Group':string,'Gender':string,'Discount Amount':number,[key:string]:any}[]} dataset 
+ * @param {{
+ *      name:string,
+ *      matchType: 'exact'|'close'|'ignore',
+ *      tolerance: number,
+ *      weight: number
+ * }[]} criterions
+ * @param {boolean} sort
+ * @returns {{'CID': string,'Age Group':string,'Gender':string,'Discount Amount':number,score:number,[key:string]:any}}
+ */
+export function calcSimilarities(seed, dataset, criterions, sort = true) {
+    const range = d3max(dataset, d => d['Discount Amount']) - d3min(dataset, d => d['Discount Amount'])
+
+    // init criterionDict for faster access
+    const criterionDict = {}
+    for (const criterion of criterions) {
+        criterionDict[criterion.name] = criterion
+    }
+
+    let result = [];
+    for (const data of dataset) {
+
+        const ageDist = calcAgeSimimlarity(seed['Age Group'], data['Age Group'], criterionDict['Age Group'])
+        const genderDist = calcGenderSimilarity(seed['Gender'], data['Gender'], criterionDict['Gender'])
+        const discountDist = calcDiscountAmountSimilarity(seed['Discount Amount'], data['Discount Amount'], criterionDict['Discount Amount'], range)
+
+        result.push({
+            CID: data.CID,
+            'Age Group': ageDist,
+            'Gender': genderDist,
+            'Discount Amount': discountDist,
+            score: ageDist + genderDist + discountDist
+        })
+    }
+
+    // sort from least to greatest distance score
+    if (sort)
+        result = d3sort(result, d => d.score)
+
+    return result
+}
+
+const ageGroupIndex = {
+    'under 18': 0,
+    '18-25': 1,
+    '25-45': 2,
+    '45-60': 3,
+    '60 and above': 4
+}
+
+/**
+ * returns weighted distance between seed age group and compare age group
+ * @param {string} seedAgeGroup 
+ * @param {string} compareAgeGroup 
+ * @param {{
+ *      name:string,
+ *      matchType: 'exact'|'close'|'ignore',
+ *      tolerance: number,
+ *      weight: number
+ * }} criterion 
+ * @returns {number}
+ */
+export function calcAgeSimimlarity(seedAgeGroup, compareAgeGroup, criterion) {
+    // max distance is 1
+    let distances = [];
+    if (criterion.matchType === 'exact')
+        distances = [0, 1, 1, 1, 1]; // equals number of age groups
+    else if (criterion.matchType === 'close')
+        distances = [0, 0.5, 1, 1, 1];
+    else
+        return 1 * criterion.weight
+
+    // calc group distance
+    const i = Math.abs(ageGroupIndex[seedAgeGroup] - ageGroupIndex[compareAgeGroup])
+
+    return distances[i] * criterion.weight
+}
+
+/**
+ * returns weighted distance between seed gender and compare gender
+ * @param {string} seedGender 
+ * @param {string} compareGender 
+ * @param {{
+*      name:string,
+*      matchType: 'exact'|'close'|'ignore',
+*      tolerance: number,
+*      weight: number
+* }} criterion 
+* @returns {number}
+*/
+export function calcGenderSimilarity(seedGender, compareGender, criterion) {
+    if (seedGender === compareGender)
+        return 0
+    else
+        return 1 * criterion.weight
+}
+
+/**
+ * returns weighted distance between seed discount amount and compare discount amount
+ * @param {number} seed 
+ * @param {number} compare
+ * @param {number} range - range of discount amount for normalization
+ * @param {{
+*      name:string,
+*      matchType: 'exact'|'close'|'ignore',
+*      tolerance: number,
+*      weight: number
+* }} criterion 
+* @returns {number}
+*/
+export function calcDiscountAmountSimilarity(seed, compare, criterion, range) {
+    const bin = range / 5
+    const diff = Math.abs(seed - compare)
+
+    if (diff <= bin)
+        return 0
+    else if (diff <= (bin * 2)) {
+        if (criterion.matchType === 'close')
+            return 0.5 * criterion.weight
+    }
+
+    // matchtype == exact and diff not within bin range
+    return 1 * criterion.weight
 }

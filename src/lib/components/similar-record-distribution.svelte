@@ -38,11 +38,13 @@
     async function loadData() {
         //var data = await csv("ecommerce_usa.csv")
         var data = await systemData.filtered
-        // console.log("first data",data[0])
-        // console.log("group",group(data,d=>d.CID))
+
         if(data.length>0){
             select("#similar-rcord").selectAll("*").remove()
-            var groupedData = rollups(
+
+            //////////////
+            //aggregation
+            var rollups_data = rollups(
                 systemData.filtered,
                 (group) => ({
                     ...group[0],
@@ -50,24 +52,27 @@
                 }),
                 (d) => d.CID
             ).map(([key, value]) => value)
+            //////////////
             
-            temp_data = groupedData.map(function(d){
-                return {
-                    Gender : d.Gender,
-                    Age_group : d["Age Group"],
-                    Inr : findCategory(d["totalDiscount"])
-                }
-            })
-            //console.log("tempdata[0]",temp_data[0])
-            //console.log("seed records",systemData.seedCustomer)
-            //console.log("find seed records data",groupedData.find(d => d.CID == systemData.seedCustomer))
-            var seed_data = groupedData.find(d => d.CID == systemData.seedCustomer)
+            //seed customer (will use data from aggregation => change "totalDiscount" to ?)
+            var seed_data = rollups_data.find(d => d.CID == systemData.seedCustomer)
             seed_customer = {
                 gender : seed_data.Gender,
                 age : seed_data["Age Group"],
                 inr: INRtoCat.find(c => seed_data.totalDiscount > c.min 
                 && seed_data.totalDiscount <= c.max).category
             }
+            
+            //histogram data (will use data from aggregation => change "totalDiscount" to ?)
+            temp_data = rollups_data.map(function(d){
+                return {
+                    Gender : d.Gender,
+                    Age_group : d["Age Group"],
+                    Inr : findCategory(d["totalDiscount"])
+                }
+            })
+            
+    
         }
         
         return data.length

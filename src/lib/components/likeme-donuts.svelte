@@ -45,7 +45,9 @@
     }
 
     function dataPreprocessing(data){
-        //var key = [`${d.Gender}`,`${d["Age Group"]}`,`${findCategory(+d["Discount Amount (INR)"])}`]
+        
+        /////////////////////
+        //aggregation
         var rollups_data = rollups(
             systemData.filtered,
             (group) => ({
@@ -55,6 +57,9 @@
             (d) => d.CID
         ).map(([key, value]) => value)
 
+       ////////////////////////
+
+       //seed customer (will use data from aggregation => change "totalDiscount" to ?)
         var seed_data = rollups_data.find(d => d.CID == systemData.seedCustomer)
         seed_customer = {
             gender : seed_data.Gender,
@@ -62,9 +67,9 @@
             inr: INRtoCat.find(c => seed_data.totalDiscount > c.min 
             && seed_data.totalDiscount <= c.max).category
         }
-        console.log("seed",seed_customer,seed_data)
+        
+        //tree data (will use data from aggregation => => change "totalDiscount" to ?)
         var group_data = groups(rollups_data, d => d["Age Group"], d => d.Gender, d => findCategory(d.totalDiscount))
-        //console.log("group data",group_data)
         temp_data = {
             "name": "root",
             "children": group_data.map(function(ageGroup) {
@@ -84,8 +89,9 @@
                 }
             })
         }
-        //console.log("temp data",temp_data)
     }
+
+
     function findCategory(value) {
         const category = INRtoCat.find(c => value >= c.min && value <= c.max);
         return category ? category.category : "Unknown";
@@ -100,7 +106,6 @@
             .size([2 * Math.PI, radius * radius])
 
         p_root = partition_(root);
-        //console.log(root)
 
         arc_ = arc()
             .startAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, d.x0)); })
@@ -174,7 +179,6 @@
             .enter().append("path")
             .attr("d", arc_)
             .style("fill", function(d){
-                //console.log(d)
                 var temp
                 if(d.depth == 1){ //age group
                     temp = SimilaritytoCat(Math.abs(AgeGrouptoCat[d.data.name]-AgeGrouptoCat[seed_customer.age]))

@@ -90,7 +90,7 @@
             .data(colorScale.domain())
             .enter()
             .append("g")
-            .attr("transform", (d, i) => `translate(20, ${20 + i * 20})`) // 簡單的排布
+            .attr("transform", (d, i) => `translate(20, ${20 + i * 20})`)
             .each(function(d) {
                 select(this)
                     .append("rect")
@@ -172,11 +172,15 @@
         singleBar_svg.append("g")
             .call(axisLeft(yScale))
 
-        singleBar_svg.append("text")
+            singleBar_svg.append("text")
             .attr("text-anchor", "middle")
             .attr("x", 400 / 2-50)
             .attr("y", 300 - 10)
-            .text(`${id}`)
+            .text(function(){
+                if(id=="Inr")return "Discount Amount"
+                else if(id =="Age_group") return "Age Group"
+                else return id
+            })
             .style("font-size", "14px")
             .style("fill", "black")
         singleBar_svg.append("text")

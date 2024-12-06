@@ -2,12 +2,14 @@
 	import { systemData } from '../utils/storage.svelte';
 	import * as d3 from 'd3';
 	import { debounce } from '../utils/event-utils';
+	import Throbber from './throbber.svelte';
 
 	let sliderValue = $state(systemData.filteredAggregated.length);
 	let selectedOption = $state('N');
 	let sliderMax = $state(systemData.aggregated.length);
 
 	let svg, binnedData;
+	let isFiltering = $state(false);
 
 	// detect distance sorted change and criterions change
 	$effect(() => {
@@ -36,7 +38,7 @@
 		const x = d3
 			.scaleBand()
 			// .domain(data.map((d) => d.range))
-			.domain(binnedData.map((d) => `<${d.x1.toFixed(1)}`))
+			.domain(binnedData.map((d) => `< ${d.x1.toFixed(1)}`))
 			.range([margin.left, width - margin.right])
 			.padding(0.1);
 
@@ -62,10 +64,10 @@
 			g.append('text')
 				.attr('x', width / 2 + 20)
 				.attr('y', margin.bottom - 10)
-				.text('Score')
+				.text('Distance')
 				.style('font-size', '16px')
 				.style('font-weight', 'bold')
-				.style('fill', '#000');
+				.style('fill', 'currentColor');
 
 			g.append('text')
 				.attr('x', width - 70)
@@ -75,21 +77,6 @@
 				.style('fill', 'gray');
 			return g;
 		};
-		// g
-		// 	.attr('transform', `translate(0,${height - margin.bottom})`)
-		// 	.call(d3.axisBottom(x).tickSize(0))
-		// 	.call((g) => g.selectAll('text').style('font-size', '10px'))
-		//     .append('text')
-		//     .attr('x', margin.left)
-		//     .attr('y', margin.bottom / 2)
-		//     .text('(most similar)')
-		//     .style('font - size', '10px')
-		//     .style('fill', 'gray')
-		//     .attr('dx', '0.5em')
-		//     .attr('dy', '0.5em')
-		//     .on('click', () => {
-		//         console.log('Most similar clicked');
-		//         })
 
 		const yAxis = (g) =>
 			g
@@ -106,7 +93,7 @@
 				.text('# of records')
 				.style('font-size', '18px')
 				.style('font-weight', 'bold')
-				.style('fill', '#000');
+				.style('fill', 'currentColor');
 
 		d3.select(svg).append('g').call(xAxis);
 
@@ -117,12 +104,11 @@
 			.selectAll('rect')
 			.data(binnedData)
 			.join('rect')
-			.attr('x', (d) => x(`<${d.x1.toFixed(1)}`))
+			.attr('x', (d) => x(`< ${d.x1.toFixed(1)}`))
 			.attr('y', (d) => y(d.value))
 			.attr('height', (d) => y(0) - y(d.value))
 			.attr('width', x.bandwidth())
 			.attr('fill', (d) => (isIncluded(d.x0) ? 'green' : 'lightgrey'));
-		// .attr('fill', 'lightgrey');
 	}
 
 	function isIncluded(rangeLow) {
@@ -137,7 +123,9 @@
 	/**
 	 * filters aggregated data
 	 */
-	function filterData() {
+	async function filterData() {
+		isFiltering = true;
+
 		const includeCount =
 			selectedOption === 'N'
 				? sliderValue
@@ -146,8 +134,12 @@
 		const includedCID = systemData.distanceSorted.slice(0, includeCount).map((d) => d.CID);
 		const distinctCID = new Set(includedCID); // effciency purpose in search
 
-		systemData.filteredAggregated = systemData.aggregated.filter((d) => distinctCID.has(d.CID));
-		systemData.filtered = systemData.archived.filter((d) => distinctCID.has(d.CID));
+		systemData.filteredAggregated = await systemData.aggregated.filter((d) =>
+			distinctCID.has(d.CID)
+		);
+		systemData.filtered = await systemData.archived.filter((d) => distinctCID.has(d.CID));
+
+		isFiltering = false;
 	}
 
 	function changeOption(option) {
@@ -162,7 +154,7 @@
 	}
 </script>
 
-<div>
+<div class="relative w-full">
 	<div class="options">
 		<button
 			type="button"
@@ -186,18 +178,18 @@
 		</button>
 	</div>
 
-	<div class="my-[10px] bg-[lightgrey] p-[10px]">
-		<div class="my-[10px] flex justify-between">
+	<div class="flex flex-col gap-2 rounded-b-md bg-base-100 px-3 py-1">
+		<div class="flex justify-between">
 			<span>All Archived Records</span>
 			<span>{systemData.aggregated.length}</span>
 		</div>
 
-		<div class="my-[10px] flex justify-between">
+		<div class="flex justify-between">
 			<span>Filtered Out</span>
 			<span>{systemData.aggregated.length - systemData.filteredAggregated.length}</span>
 		</div>
 
-		<div class="my-[10px] flex justify-between">
+		<div class="flex justify-between">
 			<span class="font-bold">Remainings Ranked by Similarity</span>
 			<span>{systemData.filteredAggregated.length}</span>
 		</div>
@@ -215,17 +207,22 @@
 			min="0"
 			max={sliderMax}
 			bind:value={sliderValue}
-			onchange={debounce(filterData, 100)}
+			onchange={filterData}
 			style="width: 100%; margin-bottom: 5px;"
 			class="styled-slider"
 		/>
-		<!-- <div class="slider-percentage">{sliderValue + (selectedOption == '%' ? selectedOption : '')}</div> -->
 	</div>
-	<!-- <div style="text-align: center; font-size: 14px; font-weight: bold;">
-		{sliderValue + (selectedOption == '%' ? selectedOption : '')}
-	</div> -->
 
-	<svg bind:this={svg} style="width: 100%; height: 400px; background-color: #f9f9f9;"></svg>
+	<svg bind:this={svg} class="w-full" style="aspect-ratio: 1.2;"></svg>
+
+	{#if isFiltering}
+		<div
+			class="absolute left-0 top-0 flex h-full w-full flex-col items-center justify-center bg-slate-900 bg-opacity-30"
+		>
+			<div class="text-2xl font-bold text-info">Filtering Data...</div>
+			<Throbber class="h-32 w-32 text-info" />
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -242,10 +239,6 @@
 		text-align: center;
 		color: #fff;
 		font-weight: bold;
-	}
-
-	svg {
-		background-color: #f9f9f9;
 	}
 
 	.slider-container {

@@ -14,7 +14,7 @@
 	});
 </script>
 
-<div class="flex justify-between">
+<div class="flex w-full gap-3">
 	<AgeChart />
 	<GenderChart />
 	<DiscountAmountChart />

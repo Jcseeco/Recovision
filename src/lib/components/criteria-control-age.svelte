@@ -119,7 +119,7 @@
 	}
 </script>
 
-<div>
+<div class="flex-grow basis-full">
 	<div class="options">
 		<button
 			type="button"
@@ -166,7 +166,7 @@
 		{weight.toFixed(2)}
 	</div>
 
-	<svg bind:this={svg} style="width: 100%; height: 400px; background-color: #f9f9f9;"></svg>
+	<svg bind:this={svg} class="w-full" style="aspect-ratio: 0.8;"></svg>
 
 	<div
 		style="text-align: center; font-size: 16px; margin-top: 5px;"
@@ -201,10 +201,6 @@
 
 	.option.active {
 		background-color: green;
-	}
-
-	svg {
-		background-color: #f9f9f9;
 	}
 
 	.slider-container {

@@ -13,59 +13,45 @@
 </script>
 
 <section class="flex flex-wrap gap-4">
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">Seed Record</h2>
-			<SeedRecord />
-		</div>
+	<div class="card flex-grow shadow-sm" style="max-width: 600px;">
+		<SeedRecord />
 	</div>
 
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">Similarity Criteria Control</h2>
-			<SimilarityCriteriaControl />
-		</div>
+	<div class="card flex-grow bg-base-200 px-4 py-3 shadow-sm" style="max-width: 700px;">
+		<h2 class="card-title mb-3">Similarity Criteria Control</h2>
+		<SimilarityCriteriaControl />
 	</div>
 
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">Similarity Distribution</h2>
-			<SimilarityDistribution />
-		</div>
+	<div class="card flex-grow bg-base-200 px-4 py-3 shadow-sm" style="max-width: 400px;">
+		<h2 class="card-title mb-3">Similarity Distribution</h2>
+		<SimilarityDistribution />
 	</div>
 
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">Similar Record Distribution</h2>
-			<SimilarRecordDistribution />
-		</div>
+	<div class="card flex-grow bg-base-200 px-4 py-3 shadow-sm">
+		<h2 class="card-title mb-3">Similar Record Distribution</h2>
+		<SimilarRecordDistribution />
 	</div>
 
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">Like me Donuts</h2>
-			<LikemeDonuts />
-		</div>
+	<div class="card flex-grow bg-base-200 px-4 py-3 shadow-sm" style="max-width: 600px;">
+		<h2 class="card-title mb-3">Like me Donuts</h2>
+		<LikemeDonuts />
 	</div>
 
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">Ranking Glyph</h2>
-			<RankingGlyph />
-		</div>
+	<div class="card flex-grow bg-base-200 px-4 py-3 shadow-sm" style="max-width: 500px;">
+		<h2 class="card-title">Ranking Glyph</h2>
+		<RankingGlyph />
 	</div>
 
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">History Heatmap</h2>
-			<HistoryHeatmap />
-		</div>
+	<div class="card flex-grow bg-base-200 px-4 py-3 shadow-sm" style="max-width: 600px;">
+		<h2 class="card-title mb-3">History Heatmap</h2>
+		<HistoryHeatmap />
 	</div>
 
-	<div class="card flex-grow bg-base-200">
-		<div class="card-body">
-			<h2 class="card-title">Similarity Map</h2>
-			<SimilarityMap />
-		</div>
+	<div
+		class="card flex-grow bg-base-200 px-4 py-3 shadow-sm"
+		style="max-width: 700px;min-width:500px"
+	>
+		<h2 class="card-title mb-3">Similarity Map</h2>
+		<SimilarityMap />
 	</div>
 </section>

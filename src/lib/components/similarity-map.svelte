@@ -103,7 +103,7 @@
 		});
 
 		// udpate color scale
-		Color.domain([minAmount, maxAmount]).range(['lightgray', 'green']);
+		Color.domain([minAmount, maxAmount]).range(['lightgrey', 'green']);
 	}
 
 	function initDef() {
@@ -130,7 +130,7 @@
 		map
 			.append('rect')
 			.attr('x', viewW - 20)
-			.attr('y', viewH - 120)
+			.attr('y', viewH - 130)
 			.attr('width', 15)
 			.attr('height', 100)
 			.attr('fill', "url('#map_colorGradient')");
@@ -138,7 +138,7 @@
 		const legendLabels = map
 			.append('g')
 			.attr('class', 'legend')
-			.attr('transform', `translate(${viewW - 80},${viewH - 130})`);
+			.attr('transform', `translate(${viewW - 80},${viewH - 140})`);
 
 		legendLabels.append('text').attr('class', 'high').attr('fill', 'currentColor');
 		legendLabels.append('text').attr('class', 'low').attr('y', 130).attr('fill', 'currentColor');
@@ -224,9 +224,9 @@
 	}
 </script>
 
-<div class="chart-container p-3" style="width: 700px;">
+<div class="chart-container w-full p-3">
 	<!-- svelte-ignore component_name_lowercase -->
-	<svg id="map" class="cursor-grab" width="100%" viewbox="0 0 975 610">
+	<svg id="map" class="w-full cursor-grab" viewbox="0 0 975 610">
 		<defs>
 			<linearGradient id="map_colorGradient" x1="0" x2="0" y1="0" y2="1">
 				<stop offset="0%" stop-color="green" />

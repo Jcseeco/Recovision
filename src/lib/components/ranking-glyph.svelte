@@ -5,8 +5,8 @@
 	let rankSvg, rankedData, axisX, legend;
 	/** @type {typeof systemData.distanceSorted} */
 	let selectedData = [];
-	let viewH = 300,
-		viewW = 400;
+	let viewH = 480,
+		viewW = 480;
 	const MT = 70,
 		MB = 30;
 	let scaleX = scaleBand().range([0, viewW]).padding(0.2);
@@ -105,6 +105,4 @@
 	}
 </script>
 
-<div class="chart-container" style="max-width: 400px;">
-	<svg id="rank" width={viewW} height={viewH} viewbox="0 0 {viewW} {viewH}" />
-</div>
+<svg id="rank" width={viewW} height={viewH} viewbox="0 0 {viewW} {viewH}" />

@@ -524,12 +524,9 @@
 	// setTimeout(setAndRender, 5000);
 </script>
 
-<div class="h-full flex-col bg-white text-xs">
-	<div class="flex flex-row" id="seed-record-header">
-		<div
-			class="flex w-3/4 flex-row justify-between rounded-md bg-gray-200 p-4"
-			id="cust-sales-header"
-		>
+<div class="h-full flex-col bg-base-100 text-xs">
+	<div class="flex" id="seed-record-header">
+		<div class="flex w-3/4 gap-3 rounded-md bg-base-200 p-4" id="cust-sales-header">
 			<div class="my-auto px-1">
 				<h3>Customer ID</h3>
 				<p id="cid">N/A</p>
@@ -578,8 +575,10 @@
 						>
 					</div>
 				</div>
+			{:else}
+				<div class="flex items-center text-lg font-bold">Seed Record</div>
 			{/if}
-			<div class="flex flex-col">
+			<div class="ml-auto flex flex-col">
 				<div class=" my-auto flex flex-row py-1" id="square-legend"></div>
 				{#if mode != 'record'}<div
 						class="my-auto flex flex-row py-1"
@@ -588,7 +587,7 @@
 			</div>
 		</div>
 		{#if mode != 'record'}
-			<div class="mx-1 flex w-1/4 flex-col rounded-md bg-gray-200" id="outcome-dist-header">
+			<div class="mx-1 flex w-1/4 flex-col rounded-md bg-base-200" id="outcome-dist-header">
 				<p class="py-4 text-center text-xl">Outcome distribution</p>
 				<div class="flex flex-col justify-between">
 					<div class="my-auto flex flex-row justify-start">
@@ -610,11 +609,11 @@
 		{/if}
 	</div>
 	<div class="flex w-full flex-row" id="seed-records">
-		<div class="border-gray w-3/4 rounded-md border-2" id="cust-sales-record">
+		<div class="w-3/4 rounded-md border" id="cust-sales-record">
 			<table class="table" id="table"></table>
 		</div>
 		{#if mode != 'record'}
-			<div class="mx-1 w-1/4 rounded-md bg-gray-100 px-4" id="saletype-outcome">
+			<div class="mx-1 w-1/4 rounded-md bg-base-200 px-4" id="saletype-outcome">
 				<div class="flex flex-col justify-between">
 					{#each saleTypes as st}
 						<div class="flex flex-row justify-between py-10">

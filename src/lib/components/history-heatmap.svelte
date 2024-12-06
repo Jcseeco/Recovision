@@ -3,7 +3,7 @@
 	import { systemData } from '../utils/storage.svelte';
 	import { onMount } from 'svelte';
 
-	const cellW = 40,
+	const cellW = 35,
 		cellH = 25,
 		// margins
 		MB = 20,
@@ -203,7 +203,7 @@
 	}
 </script>
 
-<div class="chart-container overflow-auto p-3" style="max-width: 800px;max-height:400px">
+<div class="chart-container w-full p-3" style="max-width: {chartW}px;">
 	<svg id="heat" width={chartW} height={chartH} viewbox="0 0 {chartW} {chartH}">
 		<defs>
 			<linearGradient id="heatmap_colorGradient" x1="0" x2="0" y1="0" y2="1">

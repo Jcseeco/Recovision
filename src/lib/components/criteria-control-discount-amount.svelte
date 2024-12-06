@@ -27,7 +27,7 @@
 
 		const x = d3
 			.scaleBand()
-			.domain(binnedData.map((d) => `${d.x0.toFixed(0)}-${d.x1.toFixed(0)}`))
+			.domain(binnedData.map((d) => `${(d.x0 / 1000).toFixed(0)}-${(d.x1 / 1000).toFixed(0)}K`))
 			.range([margin.left, width - margin.right])
 			.padding(0.1);
 
@@ -58,7 +58,7 @@
 			.selectAll('rect')
 			.data(binnedData)
 			.join('rect')
-			.attr('x', (d) => x(`${d.x0.toFixed(0)}-${d.x1.toFixed(0)}`))
+			.attr('x', (d) => x(`${(d.x0 / 1000).toFixed(0)}-${(d.x1 / 1000).toFixed(0)}K`))
 			.attr('y', (d) => y(d.value))
 			.attr('height', (d) => y(0) - y(d.value))
 			.attr('width', x.bandwidth())
@@ -117,7 +117,7 @@
 	}
 </script>
 
-<div>
+<div class="flex-grow basis-full">
 	<div class="options">
 		<button
 			type="button"
@@ -164,7 +164,7 @@
 		{weight.toFixed(2)}
 	</div>
 
-	<svg bind:this={svg} style="width: 100%; height: 400px; background-color: #f9f9f9;"></svg>
+	<svg bind:this={svg} class="w-full" style="aspect-ratio: 0.8;"></svg>
 
 	<div
 		style="text-align: center; font-size: 16px; margin-top: 5px;"
@@ -199,10 +199,6 @@
 
 	.option.active {
 		background-color: green;
-	}
-
-	svg {
-		background-color: #f9f9f9;
 	}
 
 	.slider-container {

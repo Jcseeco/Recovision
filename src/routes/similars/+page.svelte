@@ -22,15 +22,15 @@
 
 	<div class="card flex-grow bg-base-200">
 		<div class="card-body">
-			<h2 class="card-title">Similarity Distribution</h2>
-			<SimilarityDistribution />
+			<h2 class="card-title">Similarity Criteria Control</h2>
+			<SimilarityCriteriaControl />
 		</div>
 	</div>
 
 	<div class="card flex-grow bg-base-200">
 		<div class="card-body">
-			<h2 class="card-title">Similarity Criteria Control</h2>
-			<SimilarityCriteriaControl />
+			<h2 class="card-title">Similarity Distribution</h2>
+			<SimilarityDistribution />
 		</div>
 	</div>
 

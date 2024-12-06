@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import * as d3 from 'd3';
 	import Throbber from './throbber.svelte';
+	import { ageGroupIndex } from '../utils/score';
+	import { debounce } from '../utils/event-utils';
 
 	let isLoading = $state(false);
 
@@ -15,6 +17,7 @@
 	];
 
 	let svg;
+	let weight = $state(0);
 
 	function drawBarChart() {
 		const margin = { top: 10, right: 5, bottom: 20, left: 30 };
@@ -60,37 +63,38 @@
 			.attr('y', (d) => y(d.value))
 			.attr('height', (d) => y(0) - y(d.value))
 			.attr('width', x.bandwidth())
-			.attr('fill', (d) =>
-				isSelected(d.range, systemData.seedCustomerObj['Age Group'])
-					? 'oklch(70.27% 0.1889 142.02)'
-					: 'lightgrey'
-			);
+			.attr('fill', (d) => getColor(d.range));
 
-		function isSelected(range, value) {
-			return range == value;
+		function getColor(ageGroup) {
+			const matchType = systemData.criterions[0].matchType;
+			if (matchType === 'ignore') return 'lightgrey';
+
+			const seed = systemData.seedCustomerObj['Age Group'];
+			const dist = Math.abs(ageGroupIndex[seed] - ageGroupIndex[ageGroup]);
+
+			// exact match
+			if (dist === 0) return 'oklch(70.27% 0.1889 142.02)'; // lighter green
+
+			// close match
+			if (dist === 1 && matchType === 'close') return 'oklch(56.26% 0.1653 142.02)'; // darker green
+
+			return 'lightgrey';
 		}
 	}
 
 	onMount(() => {
 		isLoading = true;
-		const cKey = {};
-		const distinctCustomers = new Set();
 
-		for (const d of systemData.archived) {
-			if (distinctCustomers.has(d.CID)) continue;
+		weight = systemData.criterions[0].weight;
 
-			if (!cKey[d['Age Group']]) cKey[d['Age Group']] = 1;
-			else cKey[d['Age Group']] += 1;
+		const ageGroupCount = d3.rollup(
+			systemData.aggregated,
+			(D) => D.length,
+			(d) => d['Age Group']
+		);
 
-			distinctCustomers.add(d.CID);
-		}
-
-		for (let i in cKey) {
-			data.forEach((item) => {
-				if (item.range === i) {
-					item.value = cKey[i];
-				}
-			});
+		for (const group of data) {
+			group['value'] = ageGroupCount.get(group['range']);
 		}
 
 		drawBarChart();
@@ -99,10 +103,19 @@
 
 	function selectMatchType(matchType) {
 		systemData.criterions[0].matchType = matchType;
+		drawBarChart();
 	}
 
 	function isActive(matchType) {
 		return systemData.criterions[0].matchType === matchType;
+	}
+
+	/**
+	 * writes weight to systemData
+	 * paired with debounce to prevent frequent updates
+	 */
+	function writeWeight() {
+		systemData.criterions[0].weight = weight;
 	}
 </script>
 
@@ -144,12 +157,13 @@
 			min="0"
 			max="2"
 			step="0.01"
-			bind:value={systemData.criterions[0].weight}
+			bind:value={weight}
+			onchange={debounce(writeWeight)}
 			style="width: 100%; margin: 10px 0;"
 		/>
 	</div>
 	<div style="text-align: center; font-size: 14px; font-weight: bold;">
-		{systemData.criterions[0].weight.toFixed(2)}
+		{weight.toFixed(2)}
 	</div>
 
 	<svg bind:this={svg} style="width: 100%; height: 400px; background-color: #f9f9f9;"></svg>

@@ -3,12 +3,18 @@
 	import { onMount } from 'svelte';
 	import * as d3 from 'd3';
 	import Throbber from './throbber.svelte';
+	import { debounce } from '../utils/event-utils';
 
 	let isLoading = $state(false);
 
-	const data = [];
+	const data = [
+		{ range: 'Male', value: 0 },
+		{ range: 'Female', value: 0 },
+		{ range: 'Other', value: 0 }
+	];
 
 	let svg;
+	let weight = $state(0);
 
 	function drawBarChart() {
 		const margin = { top: 10, right: 5, bottom: 20, left: 30 };
@@ -54,33 +60,32 @@
 			.attr('y', (d) => y(d.value))
 			.attr('height', (d) => y(0) - y(d.value))
 			.attr('width', x.bandwidth())
-			.attr('fill', (d) =>
-				isSelected(d.range, systemData.seedCustomerObj.Gender)
-					? 'oklch(70.27% 0.1889 142.02)'
-					: 'lightgrey'
-			);
+			.attr('fill', (d) => getColor(d.range));
 
-		function isSelected(range, value) {
-			return range == value;
+		function getColor(gender) {
+			const matchType = systemData.criterions[1].matchType;
+			if (matchType === 'ignore') return 'lightgrey';
+
+			// exact match
+			if (systemData.seedCustomerObj['Gender'] === gender) return 'oklch(70.27% 0.1889 142.02)'; // lighter green
+
+			return 'lightgrey';
 		}
 	}
 
 	onMount(() => {
 		isLoading = true;
-		const cKey = {};
-		const distinctCustomers = new Set();
 
-		for (const d of systemData.archived) {
-			if (distinctCustomers.has(d.CID)) continue;
+		weight = systemData.criterions[1].weight;
 
-			if (!cKey[d['Gender']]) cKey[d['Gender']] = 1;
-			else cKey[d['Gender']] += 1;
+		const genderCount = d3.rollup(
+			systemData.aggregated,
+			(D) => D.length,
+			(d) => d['Gender']
+		);
 
-			distinctCustomers.add(d.CID);
-		}
-
-		for (let i in cKey) {
-			data.push({ range: i, value: cKey[i] });
+		for (const d of data) {
+			d.value = genderCount.get(d.range);
 		}
 
 		drawBarChart();
@@ -89,10 +94,19 @@
 
 	function selectMatchType(matchType) {
 		systemData.criterions[1].matchType = matchType;
+		drawBarChart();
 	}
 
 	function isActive(matchType) {
 		return systemData.criterions[1].matchType === matchType;
+	}
+
+	/**
+	 * writes weight to systemData
+	 * paired with debounce to prevent frequent updates
+	 */
+	function writeWeight() {
+		systemData.criterions[1].weight = weight;
 	}
 </script>
 
@@ -107,15 +121,7 @@
 		>
 			X
 		</button>
-		<button
-			type="button"
-			class="option {isActive('close') && 'active'}"
-			onclick={() => {
-				selectMatchType('close');
-			}}
-		>
-			~
-		</button>
+		<button type="button" class="option" disabled> ~ </button>
 		<button
 			type="button"
 			class="option {isActive('exact') && 'active'}"
@@ -134,12 +140,13 @@
 			min="0"
 			max="2"
 			step="0.01"
-			bind:value={systemData.criterions[1].weight}
+			bind:value={weight}
+			onchange={debounce(writeWeight)}
 			style="width: 100%; margin: 10px 0;"
 		/>
 	</div>
 	<div style="text-align: center; font-size: 14px; font-weight: bold;">
-		{systemData.criterions[1].weight.toFixed(2)}
+		{weight.toFixed(2)}
 	</div>
 
 	<svg bind:this={svg} style="width: 100%; height: 400px; background-color: #f9f9f9;"></svg>
@@ -178,7 +185,9 @@
 	.option.active {
 		background-color: green;
 	}
-
+	.option[disabled] {
+		cursor: not-allowed;
+	}
 	svg {
 		background-color: #f9f9f9;
 	}

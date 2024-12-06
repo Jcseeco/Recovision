@@ -88,7 +88,7 @@ function getDiscountRange(amount) {
 }
 
 /**
- * returns the original dataset with added attribute of similarity score
+ * returns the customer ID with similarity distance of each criterion and the total distance
  * @param {{'CID': string,'Age Group':string,'Gender':string,'Discount Amount':number,[key:string]:any}} seed 
  * @param {{'CID': string,'Age Group':string,'Gender':string,'Discount Amount':number,[key:string]:any}[]} dataset 
  * @param {{
@@ -98,7 +98,7 @@ function getDiscountRange(amount) {
  *      weight: number
  * }[]} criterions
  * @param {boolean} sort
- * @returns {{'CID': string,'Age Group':string,'Gender':string,'Discount Amount':number,score:number,[key:string]:any}}
+ * @returns {{'CID': string,'Age Group':number,'Gender':number,'Discount Amount':number,score:number,[key:string]:any}}
  */
 export function calcSimilarities(seed, dataset, criterions, sort = true) {
     const range = d3max(dataset, d => d['Discount Amount']) - d3min(dataset, d => d['Discount Amount'])
@@ -116,12 +116,20 @@ export function calcSimilarities(seed, dataset, criterions, sort = true) {
         const genderDist = calcGenderSimilarity(seed['Gender'], data['Gender'], criterionDict['Gender'])
         const discountDist = calcDiscountAmountSimilarity(seed['Discount Amount'], data['Discount Amount'], criterionDict['Discount Amount'], range)
 
+        let score = 0
+        if (criterionDict['Age Group'].matchType !== 'ignore')
+            score += ageDist
+        if (criterionDict['Gender'].matchType !== 'ignore')
+            score += genderDist
+        if (criterionDict['Discount Amount'].matchType !== 'ignore')
+            score += discountDist
+
         result.push({
             CID: data.CID,
             'Age Group': ageDist,
             'Gender': genderDist,
             'Discount Amount': discountDist,
-            score: ageDist + genderDist + discountDist
+            score: score
         })
     }
 
@@ -132,7 +140,7 @@ export function calcSimilarities(seed, dataset, criterions, sort = true) {
     return result
 }
 
-const ageGroupIndex = {
+export const ageGroupIndex = {
     'under 18': 0,
     '18-25': 1,
     '25-45': 2,

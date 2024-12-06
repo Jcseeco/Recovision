@@ -1,115 +1,30 @@
 <script>
 	import { systemData } from '../utils/storage.svelte';
-	import { calculateSimilarity } from '../utils/score';
-	import { onMount } from 'svelte';
 	import * as d3 from 'd3';
+	import { debounce } from '../utils/event-utils';
 
-	let isFirst = true;
-	let isSlider = false;
-	let isSelectOption = false;
-	let data = [];
-	let filtered = [];
-	let allValue = 0;
-
-	let sliderValue = $state(0);
+	let sliderValue = $state(systemData.filteredAggregated.length);
 	let selectedOption = $state('N');
+	let sliderMax = $state(systemData.aggregated.length);
 
-	let svg;
+	let svg, binnedData;
 
-	let temporary = [];
+	// detect distance sorted change and criterions change
+	$effect(() => {
+		recalculate(systemData.distanceSorted);
+	});
 
-	// function calculateSimilarity(seed, compare) {
-	// 	let totalScore = 0;
+	function recalculate(distanceSorted) {
+		const binGen = d3
+			.bin()
+			.thresholds(4)
+			.value((d) => d.score);
+		const bins = binGen(distanceSorted);
 
-	// 	systemData.criterions.forEach(({ name, weight, matchType }) => {
-	// 		if (matchType === 'ignore') return; // Skip this criterion
+		binnedData = bins.map((b) => ({ value: b.length, x0: b.x0, x1: b.x1 }));
 
-	// 		let seedAgeRange = [];
-	// 		if (seed['Age Group'] == 'under 18') {
-	// 			seedAgeRange = [0, 18];
-	// 		} else if (seed['Age Group'] == '18-25') {
-	// 			seedAgeRange = [19, 25];
-	// 		} else if (seed['Age Group'] == '25-45') {
-	// 			seedAgeRange = [26, 45];
-	// 		} else if (seed['Age Group'] == '45-60') {
-	// 			seedAgeRange = [46, 60];
-	// 		} else if (seed['Age Group'] == '60 and above') {
-	// 			seedAgeRange = [61, 120];
-	// 		}
-
-	// 		let comAgeRange = [];
-	// 		if (compare['Age Group'] == 'under 18') {
-	// 			comAgeRange = [0, 18];
-	// 		} else if (compare['Age Group'] == '18-25') {
-	// 			comAgeRange = [19, 25];
-	// 		} else if (compare['Age Group'] == '25-45') {
-	// 			comAgeRange = [26, 45];
-	// 		} else if (compare['Age Group'] == '45-60') {
-	// 			comAgeRange = [46, 60];
-	// 		} else if (compare['Age Group'] == '60 and above') {
-	// 			comAgeRange = [61, 120];
-	// 		}
-
-	// 		if (name === 'Gender') {
-	// 			// Gender Matching
-	// 			if (seed.gender === compare.gender) {
-	// 				totalScore += matchType === 'exact' ? weight : 0; // Gender has no "close match" logic
-	// 			}
-	// 		} else if (name === 'Age Group') {
-	// 			// Age Group Matching
-	// 			const [seedStart, seedEnd] = seedAgeRange;
-	// 			const [compareStart, compareEnd] = comAgeRange;
-
-	// 			if (matchType === 'exact') {
-	// 				// Exact Match: Fully overlapping ranges
-	// 				if (seedStart === compareStart && seedEnd === compareEnd) {
-	// 					totalScore += weight;
-	// 				} else {
-	// 					totalScore += 0; // No overlap, score = 0
-	// 				}
-	// 			} else if (matchType === 'close') {
-	// 				// Close Match: Overlapping ranges
-	// 				if (seedEnd >= compareStart && compareEnd >= seedStart) {
-	// 					totalScore += weight * 0.5;
-	// 				}
-	// 			}
-	// 		} else if (name === 'Discount Amount (INR)') {
-	// 			// Discount Amount Matching
-	// 			const seedRange = getDiscountRange(seed['Discount Amount (INR)']);
-	// 			const compareRange = getDiscountRange(compare['Discount Amount (INR)']);
-
-	// 			if (matchType === 'exact') {
-	// 				// Exact Match: Fully overlapping ranges
-	// 				if (seedRange[0] === compareRange[0] && seedRange[1] === compareRange[1]) {
-	// 					totalScore += weight;
-	// 				} else {
-	// 					totalScore += 0; // No overlap, score = 0
-	// 				}
-	// 			} else if (matchType === 'close') {
-	// 				// Close Match: Overlapping ranges
-	// 				if (seedRange[1] >= compareRange[0] && compareRange[1] >= seedRange[0]) {
-	// 					totalScore += weight * 0.5;
-	// 				}
-	// 			}
-	// 		}
-	// 	});
-
-	// 	temporary.push({
-	// 		...compare,
-	// 		totalScore
-	// 	});
-
-	// 	return totalScore;
-	// }
-
-	// // Helper function: Map Discount Amount to predefined ranges
-	// function getDiscountRange(amount) {
-	// 	if (amount <= 100) return [0, 100];
-	// 	if (amount <= 200) return [101, 200];
-	// 	if (amount <= 300) return [201, 300];
-	// 	if (amount <= 400) return [301, 400];
-	// 	return [401, 500];
-	// }
+		drawBarChart();
+	}
 
 	function drawBarChart() {
 		const margin = { top: 5, right: 5, bottom: 40, left: 40 };
@@ -120,13 +35,14 @@
 
 		const x = d3
 			.scaleBand()
-			.domain(data.map((d) => d.range))
+			// .domain(data.map((d) => d.range))
+			.domain(binnedData.map((d) => `<${d.x1.toFixed(1)}`))
 			.range([margin.left, width - margin.right])
 			.padding(0.1);
 
 		const y = d3
 			.scaleLinear()
-			.domain([0, d3.max(data, (d) => d.value)])
+			.domain([0, d3.max(binnedData, (d) => d.value)])
 			.nice()
 			.range([height - margin.bottom, margin.top]);
 
@@ -199,205 +115,51 @@
 		d3.select(svg)
 			.append('g')
 			.selectAll('rect')
-			.data(data)
+			.data(binnedData)
 			.join('rect')
-			.attr('x', (d) => x(d.range))
+			.attr('x', (d) => x(`<${d.x1.toFixed(1)}`))
 			.attr('y', (d) => y(d.value))
 			.attr('height', (d) => y(0) - y(d.value))
 			.attr('width', x.bandwidth())
-			.attr('fill', (d) => (isSelected(d.range, d.value) ? 'green' : 'lightgrey'));
+			.attr('fill', (d) => (isIncluded(d.x0) ? 'green' : 'lightgrey'));
+		// .attr('fill', 'lightgrey');
 	}
 
-	function isSelected(range, value) {
-		if (selectedOption == 'N') {
-			const isSelect = sliderValue > allValue;
-			allValue = allValue + value;
+	function isIncluded(rangeLow) {
+		const lastIndex = systemData.filteredAggregated.length;
+		if (lastIndex === 0) return false;
 
-			// if(isSelect){
-			//     filtered = temporary.filter((item)=>{
-			//         if(item.totalScore==range){
-			//             return item
-			//         }
-			//     })
-			// }
-			return isSelect;
-		} else if (selectedOption == '%') {
-			const isSelect = sliderValue * systemData.archived.length * 0.01 > allValue;
-			allValue = allValue + value;
+		const lastIncludedScore = systemData.distanceSorted[lastIndex - 1].score;
 
-			// if(isSelect){
-			//     filtered = temporary.filter((item)=>{
-			//         if(item.totalScore==range){
-			//             return item
-			//         }
-			//     })
-			// }
-
-			return isSelect;
-		}
+		return rangeLow <= lastIncludedScore;
 	}
 
-	function computedSimilar() {
-		if (selectedOption == 'N') {
-			return sliderValue;
-		} else if (selectedOption == '%') {
-			return (systemData.maxValue * sliderValue * 0.01).toFixed(0) + '%';
-		}
+	/**
+	 * filters aggregated data
+	 */
+	function filterData() {
+		const includeCount =
+			selectedOption === 'N'
+				? sliderValue
+				: (systemData.aggregated.length * sliderValue) / sliderMax;
+
+		const includedCID = systemData.distanceSorted.slice(0, includeCount).map((d) => d.CID);
+		const distinctCID = new Set(includedCID); // effciency purpose in search
+
+		systemData.filteredAggregated = systemData.aggregated.filter((d) => distinctCID.has(d.CID));
+		systemData.filtered = systemData.archived.filter((d) => distinctCID.has(d.CID));
 	}
 
-	function computedOther() {
-		if (selectedOption == 'N') {
-			return systemData.maxValue - sliderValue;
-		} else if (selectedOption == '%') {
-			const res = (100 - systemData.maxValue * sliderValue * 0.01).toFixed(0);
-			return (res <= 0 ? 0 : res) + '%';
-		}
+	function changeOption(option) {
+		if (selectedOption === option) return;
+
+		selectedOption = option;
+		sliderMax = selectedOption === 'N' ? systemData.aggregated.length : 100;
+		sliderValue =
+			selectedOption === 'N'
+				? systemData.filteredAggregated.length
+				: Math.floor((systemData.filteredAggregated.length / systemData.aggregated.length) * 100);
 	}
-
-	const initData = () => {
-		data = [];
-
-		temporary = [];
-
-		const cKey = {};
-
-		const seed = systemData.seedCustomerObj;
-
-		systemData.archived.forEach((item) => {
-			const totalScore = calculateSimilarity(seed, item, (i) => {
-				temporary.push(i);
-			});
-			if (!cKey[totalScore]) {
-				cKey[totalScore] = 1;
-			} else {
-				cKey[totalScore] = cKey[totalScore] + 1;
-			}
-		});
-
-		// console.log('temporary####', temporary);
-
-		for (let i in cKey) {
-			data.push({ range: i, value: cKey[i] });
-		}
-
-		data.sort((a, b) => {
-			return b.range - a.range;
-		});
-
-		allValue = 0;
-		drawBarChart();
-	};
-
-	function throttle(func, delay) {
-		let timer = null;
-		return function () {
-			if (!timer) {
-				func.apply(this, arguments);
-				timer = setTimeout(() => {
-					timer = null;
-				}, delay);
-			}
-		};
-	}
-
-	const changeHandler = throttle((e) => {
-		sliderValue = e.target.valueAsNumber;
-		isSlider = true;
-	}, 400);
-
-	onMount(() => {
-		systemData.maxValue = systemData.archived.length;
-		initData();
-	});
-
-	$effect(() => {
-		if (systemData.criterions) {
-			!isFirst && initData();
-
-			isFirst = false;
-		}
-
-		if ((sliderValue || sliderValue == 0) && isSlider) {
-			let judgeData = 0;
-
-			if (selectedOption == 'N') {
-				allValue = 0;
-				systemData.maxValue = systemData.archived.length;
-				judgeData = sliderValue;
-			} else if (selectedOption == '%') {
-				allValue = 0;
-				systemData.maxValue = 100;
-				judgeData = (temporary.length * sliderValue * 0.01).toFixed(0);
-			}
-
-			drawBarChart();
-			allValue = 0;
-			data.forEach((item) => {
-				if (isSelected(item.range, item.value)) {
-					filtered = filtered.concat(
-						temporary.filter((item1) => {
-							if (item1.totalScore == item.range) {
-								return item1;
-							}
-						})
-					);
-
-					if (filtered.length > judgeData) {
-						filtered = filtered.splice(0, judgeData);
-					}
-				}
-			});
-			isSlider = false;
-			systemData.filtered = filtered.map((item1) => {
-				return item1;
-			});
-			filtered = [];
-
-			// console.log('🚀 ~ $effect ~ systemData.filtered:', systemData.filtered);
-		}
-
-		if (selectedOption && isSelectOption) {
-			let judgeData = 0;
-			if (selectedOption == 'N') {
-				allValue = 0;
-				systemData.maxValue = systemData.archived.length;
-				judgeData = sliderValue;
-				// sliderValue = 0
-			} else if (selectedOption == '%') {
-				allValue = 0;
-				systemData.maxValue = 100;
-				judgeData = (temporary.length * sliderValue * 0.01).toFixed(0);
-				// sliderValue = 0
-			}
-
-			drawBarChart();
-
-			allValue = 0;
-
-			data.forEach((item) => {
-				if (isSelected(item.range, item.value)) {
-					filtered = filtered.concat(
-						temporary.filter((item1) => {
-							if (item1.totalScore == item.range) {
-								return item1;
-							}
-						})
-					);
-
-					if (filtered.length > judgeData) {
-						filtered = filtered.splice(0, judgeData);
-					}
-				}
-			});
-			isSelectOption = false;
-			systemData.filtered = filtered.map((item1) => {
-				return item1;
-			});
-			filtered = [];
-
-			// console.log('🚀 ~ $effect ~ systemData.filtered:', systemData.filtered);
-		}
-	});
 </script>
 
 <div>
@@ -406,8 +168,7 @@
 			type="button"
 			class="option"
 			onclick={() => {
-				selectedOption = 'N';
-				isSelectOption = true;
+				changeOption('N');
 			}}
 			style="background-color: {selectedOption === 'N' ? 'green' : 'lightgrey'}"
 		>
@@ -417,8 +178,7 @@
 			type="button"
 			class="option"
 			onclick={() => {
-				selectedOption = '%';
-				isSelectOption = true;
+				changeOption('%');
 			}}
 			style="background-color: {selectedOption === '%' ? 'green' : 'lightgrey'}"
 		>
@@ -429,31 +189,33 @@
 	<div class="my-[10px] bg-[lightgrey] p-[10px]">
 		<div class="my-[10px] flex justify-between">
 			<span>All Archived Records</span>
-			<span>{systemData.maxValue + (selectedOption == '%' ? selectedOption : '')}</span>
+			<span>{systemData.aggregated.length}</span>
 		</div>
 
 		<div class="my-[10px] flex justify-between">
 			<span>Filtered Out</span>
-			<span>{computedOther()}</span>
+			<span>{systemData.aggregated.length - systemData.filteredAggregated.length}</span>
 		</div>
 
 		<div class="my-[10px] flex justify-between">
 			<span class="font-bold">Remainings Ranked by Similarity</span>
-			<span>{computedSimilar()}</span>
+			<span>{systemData.filteredAggregated.length}</span>
 		</div>
 	</div>
 
 	<div class="slider-container">
 		<div class="slider-info">
-			<span class="slider-similar">{computedSimilar()} similar</span>
-			<span class="slider-others">{computedOther()} others</span>
+			<span class="slider-similar">{sliderValue}{selectedOption === '%' ? '%' : ''} similar</span>
+			<span class="slider-others"
+				>{sliderMax - sliderValue}{selectedOption === '%' ? '%' : ''} others</span
+			>
 		</div>
 		<input
 			type="range"
 			min="0"
-			max={systemData.maxValue}
-			value={sliderValue}
-			onchange={changeHandler}
+			max={sliderMax}
+			bind:value={sliderValue}
+			onchange={debounce(filterData, 100)}
 			style="width: 100%; margin-bottom: 5px;"
 			class="styled-slider"
 		/>
@@ -537,13 +299,5 @@
 
 	.styled-slider::-webkit-slider-thumb:hover {
 		transform: scale(1.2);
-	}
-
-	.slider-percentage {
-		margin-top: 8px;
-		text-align: center;
-		font-size: 16px;
-		font-weight: bold;
-		color: #10b981;
 	}
 </style>

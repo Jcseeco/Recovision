@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import * as d3 from 'd3';
 	import Throbber from './throbber.svelte';
+	import { debounce } from '../utils/event-utils';
 
 	let isLoading = $state(false);
 
@@ -15,6 +16,7 @@
 	// ];
 
 	let svg, binnedData;
+	let weight = $state(0);
 
 	function drawBarChart() {
 		const margin = { top: 10, right: 5, bottom: 20, left: 30 };
@@ -60,52 +62,38 @@
 			.attr('y', (d) => y(d.value))
 			.attr('height', (d) => y(0) - y(d.value))
 			.attr('width', x.bandwidth())
-			.attr('fill', (d) =>
-				isSelected([d.x0, d.x1], systemData.seedCustomerObj['Discount Amount'])
-					? 'oklch(70.27% 0.1889 142.02)'
-					: 'lightgrey'
-			);
+			.attr('fill', (d) => getColor([d.x0, d.x1]));
 
-		function isSelected(range, value) {
-			return range[0] <= value && value < range[1];
+		function getColor(range) {
+			const matchType = systemData.criterions[2].matchType;
+			if (matchType === 'ignore') return 'lightgrey';
+
+			const seed = systemData.seedCustomerObj['Discount Amount'];
+
+			// exact
+			if (range[0] <= seed && seed < range[1]) return 'oklch(70.27% 0.1889 142.02)';
+
+			// close
+			const binSize = range[1] - range[0];
+			const dist = seed < range[0] ? (range[0] - seed) / binSize : (seed - range[1]) / binSize;
+			if (dist <= 1 && matchType === 'close') return 'oklch(56.26% 0.1653 142.02)'; // darker green
+
+			return 'lightgrey';
 		}
 	}
 
 	onMount(() => {
 		isLoading = true;
-		// const cKey = {};
 
-		// sum discount amount by customer
-		const discountSums = d3.rollups(
-			systemData.archived,
-			(D) => D.reduce((sum, d) => (sum += d['Discount Amount']), 0),
-			(d) => d.CID
-		);
+		weight = systemData.criterions[2].weight;
 
-		const binGen = d3.bin().thresholds(5);
-		const bins = binGen(discountSums.map((d) => d[1]));
+		const binGen = d3
+			.bin()
+			.thresholds(5)
+			.value((d) => d['Discount Amount']);
+		const bins = binGen(systemData.aggregated);
 
 		binnedData = bins.map((b) => ({ value: b.length, x0: b.x0, x1: b.x1 }));
-
-		// systemData.archived.forEach((item) => {
-		// 	if (item['Discount Amount (INR)'] <= 100) {
-		// 		cKey['0-100'] = cKey['0-100'] ? cKey['0-100'] + 1 : 1;
-		// 	} else if (item['Discount Amount (INR)'] <= 200) {
-		// 		cKey['101-200'] = cKey['101-200'] ? cKey['101-200'] + 1 : 1;
-		// 	} else if (item['Discount Amount (INR)'] <= 300) {
-		// 		cKey['201-300'] = cKey['201-300'] ? cKey['201-300'] + 1 : 1;
-		// 	} else if (item['Discount Amount (INR)'] <= 400) {
-		// 		cKey['301-400'] = cKey['301-400'] ? cKey['301-400'] + 1 : 1;
-		// 	} else {
-		// 		cKey['401-500'] = cKey['401-500'] ? cKey['401-500'] + 1 : 1;
-		// 	}
-
-		// 	// if (!cKey[item['Discount Amount (INR)']]) {
-		// 	//     cKey[item['Discount Amount (INR)']] = 1;
-		// 	// } else {
-		// 	//     cKey[item['Discount Amount (INR)']] = cKey[item['Discount Amount (INR)']] + 1;
-		// 	// }
-		// });
 
 		drawBarChart();
 		isLoading = false;
@@ -113,10 +101,19 @@
 
 	function selectMatchType(matchType) {
 		systemData.criterions[2].matchType = matchType;
+		drawBarChart();
 	}
 
 	function isActive(matchType) {
 		return systemData.criterions[2].matchType === matchType;
+	}
+
+	/**
+	 * writes weight to systemData
+	 * paired with debounce to prevent frequent updates
+	 */
+	function writeWeight() {
+		systemData.criterions[2].weight = weight;
 	}
 </script>
 
@@ -158,12 +155,13 @@
 			min="0"
 			max="2"
 			step="0.01"
-			bind:value={systemData.criterions[2].weight}
+			bind:value={weight}
+			onchange={debounce(writeWeight)}
 			style="width: 100%; margin: 10px 0;"
 		/>
 	</div>
 	<div style="text-align: center; font-size: 14px; font-weight: bold;">
-		{systemData.criterions[2].weight.toFixed(2)}
+		{weight.toFixed(2)}
 	</div>
 
 	<svg bind:this={svg} style="width: 100%; height: 400px; background-color: #f9f9f9;"></svg>

@@ -1,6 +1,6 @@
 <script>
 	import Logo from '$lib/components/logo.svelte';
-	import { csv as loadCSV, mean, rollups } from 'd3';
+	import { csv as loadCSV, sum as d3sum, rollups } from 'd3';
 	import { systemData } from '../lib/utils/storage.svelte';
 	import Throbber from '../lib/components/throbber.svelte';
 	import { onMount } from 'svelte';
@@ -53,7 +53,7 @@
 				CID: D[0].CID,
 				'Age Group': D[0]['Age Group'],
 				Gender: D[0]['Gender'],
-				'Discount Amount': mean(D, (d) => d['Discount Amount'])
+				'Discount Amount': d3sum(D, (d) => d['Discount Amount'])
 			}),
 			(d) => d.CID
 		).map(([CID, d]) => d);
@@ -79,8 +79,6 @@
 			systemData.aggregated,
 			systemData.criterions
 		);
-
-		console.log(systemData.distanceSorted[0]);
 	}
 
 	function deselectSeed() {

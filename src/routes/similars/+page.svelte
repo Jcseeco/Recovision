@@ -13,7 +13,7 @@
 </script>
 
 <section class="flex flex-wrap gap-4">
-	<div class="card flex-grow shadow-sm" style="max-width: 600px;">
+	<div class="card flex-grow" style="max-width: 600px;">
 		<SeedRecord />
 	</div>
 

@@ -32,7 +32,7 @@
 
 	function updateExpenditure() {
 		totalEstExpenditure = selectedExpenditures.reduce((acc, value) => acc + value, 0);
-		console.log(totalEstExpenditure);
+		// console.log(totalEstExpenditure);
 		let exp = totalEstExpenditure;
 		if (exp == 0) {
 			saleTypes.forEach((r, i) => {
@@ -88,7 +88,7 @@
 				// 	...current,
 				// 	custType: data
 				// }));
-				console.log(data);
+				// console.log(data);
 
 				custTypeObj = data;
 
@@ -119,7 +119,7 @@
 			)
 			.map((d) => data[d['CID']]);
 
-		console.log(dataFilt);
+		// console.log(dataFilt);
 		if (refType != 'All') dataFilt = dataFilt.slice(0, 100);
 		// list the transactions by category
 		let ret = [];
@@ -150,12 +150,12 @@
 				ret.push({ category: category, transactions: transObj });
 			}
 		);
-		console.log(ret);
+		// console.log(ret);
 		return ret;
 	}
 
 	function render_data(data1, data2, years1, years2) {
-		console.log(data1.flatMap((d) => d.transactions));
+		// console.log(data1.flatMap((d) => d.transactions));
 
 		const maxTransaction1 = d3.max(data1.flatMap((d) => Object.values(d.transactions)));
 		const minTransaction1 = d3.min(data1.flatMap((d) => Object.values(d.transactions)));
@@ -236,7 +236,7 @@
 		const body = table.append('tbody');
 
 		let availableCats = data1.map((d) => d.category);
-		console.log(availableCats);
+		// console.log(availableCats);
 
 		data1.forEach((row, i) => {
 			if (row.category == 'Discount Amount (INR)') return;
@@ -417,7 +417,7 @@
 			outDistSim[k] = v.toFixed(0);
 		});
 
-		console.log(outDistSim);
+		// console.log(outDistSim);
 	}
 
 	function showPlan() {
@@ -430,7 +430,7 @@
 			if (val == -1) return;
 			values.push(val);
 		});
-		console.log(values);
+		// console.log(values);
 		const maxTransaction1 = d3.max(values);
 		const minTransaction1 = d3.min(values);
 		const sizeScale1 = d3.scaleLinear().domain([minTransaction1, maxTransaction1]).range([5, 20]);
@@ -449,7 +449,7 @@
 				.style('height', `${sizeScale1(value)}px`);
 			selectedExpenditures.push(value);
 		});
-		console.log(selectedExpenditures);
+		// console.log(selectedExpenditures);
 		updateExpenditure();
 	}
 	function clearPlan() {
@@ -470,16 +470,14 @@
 	//         filteredAggData.push(aggJson[systemData.filteredAggregated[i].CID])
 	//     }
 	// }
-        
 
 	function setAndRender() {
-        console.log(systemData.filteredAggregated.length)
-        if(systemData.filteredAggregated.length==0){
-            d3.select('#Similar').attr('disabled',true)
-        }
-        else{
-            d3.select('#Similar').attr('disabled',null)
-        }
+		// console.log(systemData.filteredAggregated.length)
+		if (systemData.filteredAggregated.length == 0) {
+			d3.select('#Similar').attr('disabled', true);
+		} else {
+			d3.select('#Similar').attr('disabled', null);
+		}
 		initializeData();
 		if (mode == 'record') {
 			d3.select('#cust-sales-header').classed('w-3/4', false).classed('w-full', true);
@@ -494,9 +492,9 @@
 			return;
 		}
 		let selectedSeed = aggJson[systemData.seedCustomer];
-        console.log(selectedSeed,custTypeObj)
+		// console.log(selectedSeed,custTypeObj)
 		// console.log(systemData.seedCustomer,selectedSeed, $state.snapshot(Object.keys(aggJson)));
-		if (selectedSeed && selectedSeed.length > 0 && custTypeObj.length>0) {
+		if (selectedSeed && selectedSeed.length > 0 && custTypeObj.length > 0) {
 			// aggTransactions(systemData.archived)
 			let fData = {};
 			for (let i = 0; i < systemData.filteredAggregated.length; i++) {
@@ -506,11 +504,11 @@
 			// 	$state.snapshot(systemData.filtered),
 			// 	$state.snapshot(systemData.filteredAggregated)
 			// );
-            console.log(fData)
+			// console.log(fData)
 			let d2 = refType == 'All' ? aggJson : fData;
 			d2 = aggTransactions(d2, custTypeObj);
 			setSimilarOutcomeBars(custTypeObj, fData);
-			console.log(d2);
+			// console.log(d2);
 			render_data(selectedSeed, d2, years1, years2);
 		} else {
 			//render_data([],[],years1,years2)

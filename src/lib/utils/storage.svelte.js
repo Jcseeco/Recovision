@@ -29,10 +29,14 @@
  *      weight: number
  * }[],
  * aggregated: {
- *      'CID': string,
- *      'Age Group': string,
- *      'Gender': string,
- *      'Discount Amount': number,
+ *          'CID': string,
+ *          'Age Group':number,
+ *          'Gender':number,
+ *          'Discount Amount':number,
+ *          score:number,
+ *          'Age Group Match': string,
+ *          'Gender Match': string,
+ *          'Discount Amount Match': string
  * }[],
  * distanceSorted:{
  *      CID: string,

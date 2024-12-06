@@ -2,7 +2,9 @@
 	import { axisTop, rollups, scaleBand, scaleOrdinal, select } from 'd3';
 	import { systemData } from '../utils/storage.svelte';
 
-	let rankSvg, selectedData, rankedData, scaleBar, axisX, legend;
+	let rankSvg, rankedData, axisX, legend;
+	/** @type {typeof systemData.distanceSorted} */
+	let selectedData = [];
 	let viewH = 300,
 		viewW = 400;
 	const MT = 70,
@@ -19,17 +21,13 @@
 		.domain(colors.map((c) => c.label))
 		.range(colors.map((c) => c.color));
 
-	// const scaleY = scaleBand().range([MT, viewH]).padding(0.1);
-
-	$effect(async () => {
-		// TODO replace with systemData.selected
-		selectedData = await systemData.archived;
-		selectedData = selectedData.slice(0, 100);
+	$effect(() => {
+		selectedData = systemData.distanceSorted.slice(0, systemData.filteredAggregated.length);
 
 		rankSvg = select('#rank');
 		udpateAxis();
 		updateLegend();
-		rankData();
+		// rankData();
 		drawBars();
 	});
 
@@ -70,6 +68,11 @@
 	}
 
 	function drawBars() {
+		const scaleBar = scaleBand(
+			Array.from({ length: selectedData.length }, (_, i) => i),
+			[MT, viewH - MB]
+		);
+
 		rankSvg
 			.selectAll('rect.bars')
 			.data(systemData.criterions)
@@ -84,7 +87,7 @@
 		// group containing all bars of each customer
 		const records = rankSvg
 			.selectAll('g.records')
-			.data(rankedData, (d) => d[0])
+			.data(selectedData, (d) => d.CID)
 			.join('g')
 			.attr('class', 'records')
 			.attr('transform', (_, i) => `translate(0,${scaleBar(i)})`);
@@ -92,64 +95,13 @@
 		// bars for each criteria
 		records
 			.selectAll('rect')
-			.data((d) => d[1])
+			.data((d) => [d['Age Group Match'], d['Gender Match'], d['Discount Amount Match']])
 			.join('rect')
 			.attr('x', (_, i) => scaleX(systemData.criterions[i].name))
 			// .attr('y', (_, i) => scaleY(Math.ceil((i + 1) / 3)))
 			.attr('width', scaleX.bandwidth())
 			.attr('height', scaleBar.bandwidth())
 			.attr('fill', (d) => Color(d));
-	}
-
-	let cCount = 0;
-	function rankData() {
-		cCount = 0;
-		rankedData = rollups(selectedData, caclSimilarity, (d) => d.CID);
-
-		// scale of the bars in each criteri
-		scaleBar = scaleBand(
-			Array.from({ length: rankedData.length }, (_, i) => i),
-			[MT, viewH - MB]
-		);
-	}
-
-	/**
-	 *
-	 * @param {obj[]} purchaseHist puuchase history of a customer
-	 */
-	function caclSimilarity(purchaseHist) {
-		const l = ['exact', 'within', 'out'];
-		// TODO replace with similarity function
-
-		if (++cCount < 30) {
-			return Array.from({ length: systemData.criterions.length }, (_, i) => {
-				if (i === 1) {
-					return ['exact', 'exact', 'exact', 'out'][Math.floor(Math.random() * 4)];
-				} else {
-					return ['exact', 'exact', 'exact', 'within', 'within', 'within', 'out'][
-						Math.floor(Math.random() * 7)
-					];
-				}
-			});
-		} else if (++cCount < 60) {
-			return Array.from({ length: systemData.criterions.length }, (_, i) => {
-				if (i === 1) {
-					return ['exact', 'exact', 'out', 'out'][Math.floor(Math.random() * 4)];
-				} else {
-					return ['exact', 'within', 'within', 'within', 'out', 'out'][
-						Math.floor(Math.random() * 6)
-					];
-				}
-			});
-		} else {
-			return Array.from({ length: systemData.criterions.length }, (_, i) => {
-				if (i === 1) {
-					return ['exact', 'out', 'out'][Math.floor(Math.random() * 3)];
-				} else {
-					return ['exact', 'within', 'within', 'out', 'out'][Math.floor(Math.random() * 5)];
-				}
-			});
-		}
 	}
 </script>
 

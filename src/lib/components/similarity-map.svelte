@@ -1,9 +1,22 @@
 <script>
-	import { geoPath, select, json, scaleLinear, csv, zoom, scaleSequential, selectAll } from 'd3';
+	import {
+		geoPath,
+		select,
+		json,
+		zoom,
+		scaleSequential,
+		rollup,
+		sum as d3sum,
+		rollups,
+		maxIndex
+	} from 'd3';
 	import * as topojson from 'topojson-client';
 	import { systemData } from '../utils/storage.svelte';
+	import { onMount } from 'svelte';
 
-	let states, selectedData, map, path, seed, tooltip;
+	let states, map, path, seed, tooltip;
+	/** @type {typeof systemData.filtered} */
+	let selectedData = [];
 	const viewW = 975,
 		viewH = 610;
 	const prodIcons = {
@@ -17,15 +30,14 @@
 		'Sports & Fitness': 'dumbbell',
 		'Toys & Games': 'toy'
 	};
-	const Color = scaleSequential().domain([0, 1]).range(['lightgray', 'green']);
+	const Color = scaleSequential();
 
 	$effect(async () => {
 		const [albersStates, data] = await Promise.all([
 			json('states-albers-10m.json'),
-			await systemData.archived
+			await systemData.filtered
 		]);
-		// TODO replace with systemData.selected
-		selectedData = data.slice(0, 100);
+		selectedData = data;
 		states = topojson.feature(albersStates, albersStates.objects.states).features;
 
 		insertSimilarityData();
@@ -33,7 +45,7 @@
 	});
 
 	// operations that should only happen once
-	$effect(() => {
+	onMount(() => {
 		tooltip = select('#sim_map_tooltip');
 		map = select('#map');
 		path = geoPath();
@@ -42,18 +54,56 @@
 	});
 
 	function insertSimilarityData() {
-		const prodCats = Object.keys(prodIcons);
+		let maxAmount = 0;
+		let minAmount = Infinity;
+		let minState = '';
 
+		// rollup attributes in each state
+		const stateProps = rollup(
+			selectedData,
+			(D) => {
+				const netAmount = d3sum(D, (d) => d['Net Amount']);
+				const prodCount = rollups(
+					D,
+					(prod) => prod.length,
+					(d) => d['Product Category']
+				);
+				const topProduct = prodCount[maxIndex(prodCount, (d) => d[1])][0];
+
+				return { netAmount, topProduct };
+			},
+			(d) => d.Location
+		);
+
+		// populate geojson properties with rolledup data
 		states.map((state) => {
-			const i = Math.floor(Math.random() * 9);
+			const stateProp = stateProps.get(state.properties.name);
 
-			state.properties = {
-				...state.properties,
-				similarity: Math.random(),
-				topProduct: prodCats[i]
-			};
+			if (stateProp) {
+				state.properties = {
+					...state.properties,
+					netAmount: stateProp.netAmount,
+					topProduct: stateProp.topProduct
+				};
+
+				if (maxAmount < stateProp.netAmount) maxAmount = stateProp.netAmount;
+				if (minAmount > stateProp.netAmount) {
+					minAmount = stateProp.netAmount;
+					minState = state.properties.name;
+				}
+			} else {
+				state.properties = {
+					...state.properties,
+					netAmount: 0,
+					topProduct: 'none'
+				};
+			}
+
 			return state;
 		});
+
+		// udpate color scale
+		Color.domain([minAmount, maxAmount]).range(['lightgray', 'green']);
 	}
 
 	function initDef() {
@@ -88,20 +138,28 @@
 		const legendLabels = map
 			.append('g')
 			.attr('class', 'legend')
-			.attr('transform', `translate(${viewW - 35},${viewH - 115})`);
+			.attr('transform', `translate(${viewW - 80},${viewH - 130})`);
 
-		legendLabels.append('text').text('1').attr('fill', 'currentColor');
-		legendLabels.append('text').text('0').attr('y', 100).attr('fill', 'currentColor');
+		legendLabels.append('text').attr('class', 'high').attr('fill', 'currentColor');
+		legendLabels.append('text').attr('class', 'low').attr('y', 130).attr('fill', 'currentColor');
+	}
+
+	function updateLegend(domain) {
+		map.select('text.low').text(domain[0].toFixed(2));
+
+		map.select('text.high').text(domain[1].toFixed(2));
 	}
 
 	function drawMap() {
+		updateLegend(Color.domain());
+
 		const statesP = map
 			.selectAll('.states')
 			.data(states)
 			.join('path')
 			.attr('class', 'states cursor-default')
 			.attr('d', path)
-			.attr('fill', (d) => Color(d.properties.similarity))
+			.attr('fill', (d) => Color(d.properties.netAmount))
 			.on('mousemove', showTooltip)
 			.on('mouseleave', hideTooltip);
 
@@ -144,21 +202,14 @@
 		);
 	}
 
-	/**
-	 * helper
-	 */
-	function unqiueProducts(prop = 'Product Category') {
-		return new Set(selectedData.map((d) => d[prop]));
-	}
-
 	function showTooltip(ev, d) {
 		tooltip
 			.html(
 				`
 				<div>
-					<div>state:<span class="font-bold"> ${d.properties.name}</span></div>
-					<div>similarity score:<span class="font-bold"> ${d.properties.similarity.toFixed(2)}</span></div>
-					<div>Top product:<span class="font-bold"> ${d.properties.topProduct}</span></div>
+					<div>State:<span class="font-bold"> ${d.properties.name}</span></div>
+					<div>Net Amount:<span class="font-bold"> ${d.properties.netAmount.toFixed(2)}</span></div>
+					<div>Top Product:<span class="font-bold"> ${d.properties.topProduct}</span></div>
 				</div>
 			`
 			)

@@ -45,51 +45,29 @@
 		]);
 
 	$effect(async () => {
-		var len = await loadData();
-		if (len > 0) drawBar();
-		else select('#similar-rcord').selectAll('*').remove();
+		loadData();
+		drawBar();
 	});
 
 	async function loadData() {
-		//var data = await csv("ecommerce_usa.csv")
-		var data = await systemData.filtered;
+		select('#similar-rcord').selectAll('*').remove();
 
-		if (data.length > 0) {
-			select('#similar-rcord').selectAll('*').remove();
+		const seed_data = systemData.seedCustomerObj;
+		seed_customer = {
+			gender: seed_data['Gender'],
+			age: seed_data['Age Group'],
+			inr: INRtoCat.find(
+				(c) => seed_data['Discount Amount'] > c.min && seed_data['Discount Amount'] <= c.max
+			).category
+		};
 
-			//////////////
-			//aggregation
-			var rollups_data = rollups(
-				systemData.filtered,
-				(group) => ({
-					...group[0],
-					totalDiscount: group.reduce((sum, d) => sum + +d['Discount Amount'], 0)
-				}),
-				(d) => d.CID
-			).map(([key, value]) => value);
-			//////////////
-
-			//seed customer (will use data from aggregation => change "totalDiscount" to ?)
-			var seed_data = rollups_data.find((d) => d.CID == systemData.seedCustomer);
-			seed_customer = {
-				gender: seed_data.Gender,
-				age: seed_data['Age Group'],
-				inr: INRtoCat.find(
-					(c) => seed_data.totalDiscount > c.min && seed_data.totalDiscount <= c.max
-				).category
+		temp_data = systemData.filteredAggregated.map(function (d) {
+			return {
+				Gender: d['Gender'],
+				Age_group: d['Age Group'],
+				Inr: findCategory(d['Discount Amount'])
 			};
-
-			//histogram data (will use data from aggregation => change "totalDiscount" to ?)
-			temp_data = rollups_data.map(function (d) {
-				return {
-					Gender: d.Gender,
-					Age_group: d['Age Group'],
-					Inr: findCategory(d['totalDiscount'])
-				};
-			});
-		}
-
-		return data.length;
+		});
 	}
 
 	function findCategory(value) {
@@ -99,6 +77,7 @@
 	}
 
 	function drawBar() {
+		console.log('draw');
 		var attribute = ['Age_group', 'Gender', 'Inr'];
 		var svg = select('#similar-rcord');
 		var legend = svg.append('g').attr('transform', `translate(${-20}, 20)`);

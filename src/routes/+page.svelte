@@ -84,6 +84,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Load and select seed - Recovision</title>
+</svelte:head>
+
 <!-- hero -->
 <div
 	class="hero -ml-6 -mr-6 lg:-mt-8"

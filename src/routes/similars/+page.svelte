@@ -12,6 +12,10 @@
 	// export let data;
 </script>
 
+<svelte:head>
+	<title>Review Similar Records - Recovision</title>
+</svelte:head>
+
 <section class="flex flex-wrap gap-4">
 	<div class="card flex-grow" style="max-width: 600px;">
 		<SeedRecord />

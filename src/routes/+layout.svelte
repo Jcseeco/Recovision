@@ -1,6 +1,6 @@
 <script>
 	import '../app.css';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { base } from '$app/paths';
 	import Logo from '$lib/components/logo.svelte';
 	import { systemData } from '../lib/utils/storage.svelte';
@@ -44,7 +44,7 @@
 			</h1>
 			<!-- Sidebar content here -->
 			<li>
-				<a href={base + '/'} class={$page.url.pathname === '/' + base + '/' && 'active'}>
+				<a href={base + '/'} class={page.url.pathname === base + '/' ? 'active' : ''}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -65,8 +65,8 @@
 			<li title={systemData.seedCustomer ? '' : 'selected a seed customer first!'}>
 				<a
 					href={base + '/similars'}
-					class="{$page.url.pathname === '/' + base + '/similars' &&
-						'active'} {systemData.seedCustomer ? '' : 'disabled'}"
+					class="{page.url.pathname === base + '/similars' ? 'active' : ''} 
+					{systemData.seedCustomer ? '' : 'disabled'}"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -87,9 +87,9 @@
 			</li>
 			<li title={systemData.seedCustomer ? '' : 'selected a seed customer first!'}>
 				<a
-					href={base + '/recommand'}
-					class="{$page.url.pathname === '/' + base + '/recommand' &&
-						'active'} {systemData.seedCustomer ? '' : 'disabled'}"
+					href={base + '/recommend'}
+					class="{page.url.pathname === base + '/recommend' ? 'active' : ''} 
+						{systemData.seedCustomer ? '' : 'disabled'}"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -105,7 +105,7 @@
 							d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6"
 						/>
 					</svg>
-					Review Recommandation</a
+					Review Recommendation</a
 				>
 			</li>
 			<li class="mt-auto">

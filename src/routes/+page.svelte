@@ -4,6 +4,7 @@
 	import { systemData } from '../lib/utils/storage.svelte';
 	import { onMount } from 'svelte';
 	import { calcSimilarities } from '../lib/utils/score';
+	import { base } from '$app/paths';
 
 	let filteredData = $state([]);
 	let cols = $state([]);

@@ -168,8 +168,8 @@
 
 			{#if systemData.seedCustomer}
 				<span class="text-success"
-					>Great! Now go to <a href="/similars" class="underline">Review Similar Records</a> to select
-					records to inlcude for the calculations
+					>Great! Now go to <a href={base + '/similars'} class="underline">Review Similar Records</a
+					> to select records to inlcude for the calculations
 				</span>
 			{/if}
 		</div>

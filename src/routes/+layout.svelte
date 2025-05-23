@@ -1,6 +1,7 @@
 <script>
 	import '../app.css';
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import Logo from '$lib/components/logo.svelte';
 	import { systemData } from '../lib/utils/storage.svelte';
 	let { children } = $props();
@@ -43,7 +44,7 @@
 			</h1>
 			<!-- Sidebar content here -->
 			<li>
-				<a href="/" class={$page.url.pathname === '/' && 'active'}>
+				<a href={base + '/'} class={$page.url.pathname === '/' && 'active'}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -63,7 +64,7 @@
 			</li>
 			<li title={systemData.seedCustomer ? '' : 'selected a seed customer first!'}>
 				<a
-					href="/similars"
+					href={base + '/similars'}
 					class="{$page.url.pathname === '/similars' && 'active'} {systemData.seedCustomer
 						? ''
 						: 'disabled'}"
@@ -87,7 +88,7 @@
 			</li>
 			<li title={systemData.seedCustomer ? '' : 'selected a seed customer first!'}>
 				<a
-					href="/recommand"
+					href={base + '/recommand'}
 					class="{$page.url.pathname === '/recommand' && 'active'} {systemData.seedCustomer
 						? ''
 						: 'disabled'}"

@@ -1,6 +1,7 @@
 # RecoVision
 
-Ashwani, Boyang, Jack, Ying-Yu
+An interactive visualization of a recommendation system for brand expansion or decision making.
+![demo](demo.png)
 
 ## Prerequisites
 
@@ -30,10 +31,3 @@ This section is not required to run the application.
 - [Daisyui](https://daisyui.com/docs/use/)
 - [Heroicons](https://heroicons.com)
 - [LucideIcons](https://lucide.dev/icons)
-
-## VsCode extensions (recommended but not required)
-
-- Error Lens (shows errors/warings inline)
-- Svelte for VS Code
-- Tailwind CSS IntelliSense
-- D3.js code snippets

@@ -44,7 +44,7 @@
 			</h1>
 			<!-- Sidebar content here -->
 			<li>
-				<a href={base + '/'} class={$page.url.pathname === '/' && 'active'}>
+				<a href={base + '/'} class={$page.url.pathname === base + '/' && 'active'}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -65,7 +65,7 @@
 			<li title={systemData.seedCustomer ? '' : 'selected a seed customer first!'}>
 				<a
 					href={base + '/similars'}
-					class="{$page.url.pathname === '/similars' && 'active'} {systemData.seedCustomer
+					class="{$page.url.pathname === base + '/similars' && 'active'} {systemData.seedCustomer
 						? ''
 						: 'disabled'}"
 				>
@@ -89,7 +89,7 @@
 			<li title={systemData.seedCustomer ? '' : 'selected a seed customer first!'}>
 				<a
 					href={base + '/recommand'}
-					class="{$page.url.pathname === '/recommand' && 'active'} {systemData.seedCustomer
+					class="{$page.url.pathname === base + '/recommand' && 'active'} {systemData.seedCustomer
 						? ''
 						: 'disabled'}"
 				>
